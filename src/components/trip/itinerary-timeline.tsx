@@ -1,144 +1,142 @@
-
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CircleCheck, Milestone, Utensils, Bed, Footprints, Mountain, Building, Ship, Sun } from 'lucide-react';
 import React from 'react';
+import type { EnrichedItinerary, EnrichedActivity } from '@/lib/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { CircleCheck, Link as LinkIcon, Building, Utensils, Bed, Footprints, Mountain, Ship, Sun } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 
 type ItineraryTimelineProps = {
-  itinerary: string;
+  itinerary?: EnrichedItinerary;
 };
 
-type ItineraryItem = {
-  day: string;
-  title: string;
-  activities: string[];
+const getIconForActivity = (activityTitle: string) => {
+    const lowerCaseActivity = activityTitle.toLowerCase();
+    if (lowerCaseActivity.includes('lunch') || lowerCaseActivity.includes('dinner') || lowerCaseActivity.includes('breakfast') || lowerCaseActivity.includes('food') || lowerCaseActivity.includes('cuisine') || lowerCaseActivity.includes('restaurant')) {
+      return <Utensils className="h-5 w-5" />;
+    }
+    if (lowerCaseActivity.includes('check-in') || lowerCaseActivity.includes('hotel') || lowerCaseActivity.includes('check in') || lowerCaseActivity.includes('accommodation')) {
+      return <Bed className="h-5 w-5" />;
+    }
+    if (lowerCaseActivity.includes('explore') || lowerCaseActivity.includes('walk') || lowerCaseActivity.includes('tour') || lowerCaseActivity.includes('stroll')) {
+      return <Footprints className="h-5 w-5" />;
+    }
+    if (lowerCaseActivity.includes('museum') || lowerCaseActivity.includes('landmark') || lowerCaseActivity.includes('castle') || lowerCaseActivity.includes('palace') || lowerCaseActivity.includes('temple')) {
+      return <Building className="h-5 w-5" />;
+    }
+    if (lowerCaseActivity.includes('hike') || lowerCaseActivity.includes('mountain') || lowerCaseActivity.includes('nature')) {
+      return <Mountain className="h-5 w-5" />;
+    }
+    if (lowerCaseActivity.includes('beach') || lowerCaseActivity.includes('relax') || lowerCaseActivity.includes('leisure')) {
+        return <Sun className="h-5 w-5" />;
+    }
+    if (lowerCaseActivity.includes('boat') || lowerCaseActivity.includes('cruise') || lowerCaseActivity.includes('ferry')) {
+        return <Ship className="h-5 w-5" />;
+    }
+    return <CircleCheck className="h-5 w-5" />;
 };
 
-const getIconForActivity = (activity: string) => {
-  const lowerCaseActivity = activity.toLowerCase();
-  if (lowerCaseActivity.includes('lunch') || lowerCaseActivity.includes('dinner') || lowerCaseActivity.includes('breakfast') || lowerCaseActivity.includes('food') || lowerCaseActivity.includes('cuisine') || lowerCaseActivity.includes('restaurant')) {
-    return <Utensils className="h-4 w-4" />;
-  }
-  if (lowerCaseActivity.includes('check-in') || lowerCaseActivity.includes('hotel') || lowerCaseActivity.includes('check in') || lowerCaseActivity.includes('accommodation')) {
-    return <Bed className="h-4 w-4" />;
-  }
-  if (lowerCaseActivity.includes('arrive') || lowerCaseActivity.includes('depart') || lowerCaseActivity.includes('flight')) {
-    return <Milestone className="h-4 w-4" />;
-  }
-  if (lowerCaseActivity.includes('explore') || lowerCaseActivity.includes('walk') || lowerCaseActivity.includes('tour') || lowerCaseActivity.includes('stroll')) {
-    return <Footprints className="h-4 w-4" />;
-  }
-  if (lowerCaseActivity.includes('museum') || lowerCaseActivity.includes('landmark') || lowerCaseActivity.includes('castle') || lowerCaseActivity.includes('palace')) {
-    return <Building className="h-4 w-4" />;
-  }
-  if (lowerCaseActivity.includes('hike') || lowerCaseActivity.includes('mountain') || lowerCaseActivity.includes('nature')) {
-    return <Mountain className="h-4 w-4" />;
-  }
-  if (lowerCaseActivity.includes('beach') || lowerCaseActivity.includes('relax') || lowerCaseActivity.includes('leisure')) {
-      return <Sun className="h-4 w-4" />;
-  }
-  if (lowerCaseActivity.includes('boat') || lowerCaseActivity.includes('cruise') || lowerCaseActivity.includes('ferry')) {
-      return <Ship className="h-4 w-4" />;
-  }
-  return <CircleCheck className="h-4 w-4" />;
+
+const ActivityCard: React.FC<{ activity: EnrichedActivity }> = ({ activity }) => {
+  return (
+    <div className="relative pl-8">
+      <div className="absolute left-[-5px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background"></div>
+      <div className="p-4 rounded-lg transition-shadow duration-300">
+        <h4 className="font-headline text-lg font-semibold text-primary">{activity.title}</h4>
+        <p className="mt-1 text-sm text-muted-foreground">{activity.description}</p>
+        {activity.imageUrl && (
+          <div className="mt-3 relative h-40 w-full rounded-lg overflow-hidden">
+            <Image 
+                src={activity.imageUrl} 
+                alt={activity.title} 
+                fill 
+                className="object-cover" 
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
+        )}
+        {activity.link && (
+          <Button asChild variant="link" className="p-0 h-auto mt-2">
+            <Link href={activity.link} target="_blank" rel="noopener noreferrer">
+              <LinkIcon className="mr-2 h-4 w-4" />
+              Learn More
+            </Link>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 };
+
 
 const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary }) => {
-  const parseItinerary = (text: string): ItineraryItem[] => {
-    if (!text) return [];
-
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    const days: ItineraryItem[] = [];
-    let currentDay: ItineraryItem | null = null;
-    
-    const dayRegex = /^Day\s*(\d+)\s*[:-]?\s*(.*)/i;
-
-    for (const line of lines) {
-      const dayMatch = line.match(dayRegex);
-      if (dayMatch) {
-        if (currentDay) {
-          days.push(currentDay);
-        }
-        currentDay = {
-          day: `Day ${dayMatch[1]}`,
-          title: dayMatch[2].trim(),
-          activities: [],
-        };
-      } else if (currentDay) {
-          const activity = line.trim().replace(/^[-*]\s*/, '');
-          if(activity) {
-            currentDay.activities.push(activity);
-          }
-      }
-    }
-
-    if (currentDay) {
-      days.push(currentDay);
-    }
-    
-    // Fallback for unstructured text
-    if (days.length === 0 && lines.length > 0) {
-        return [{
-            day: 'Your Itinerary',
-            title: 'Trip Details',
-            activities: lines.map(line => line.trim().replace(/^[-*]\s*/, ''))
-        }];
-    }
-
-    return days;
-  };
-
-
-  const itineraryDays = parseItinerary(itinerary);
+  if (!itinerary || !itinerary.days || itinerary.days.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-muted-foreground">
+          <p>Itinerary details are being generated or are not available.</p>
+          <p className="text-sm">Please check back in a moment.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card>
-        <CardHeader>
-            <CardTitle>Your AI-Generated Itinerary</CardTitle>
-            <CardDescription>A detailed timeline for your adventure.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {itineraryDays.length > 0 ? (
-                <div className="space-y-8">
-                    {itineraryDays.map((item, index) => (
-                        <div key={index} className="relative pl-8">
-                            <div className="absolute left-0 top-0 flex h-full w-8 justify-center">
-                                <div className="h-full w-px bg-border"></div>
-                            </div>
-                            <div className="absolute left-0 top-1.5 -translate-x-1/2">
-                                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                                    <span className="text-xs font-bold">{index + 1}</span>
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <h3 className="font-headline text-lg font-semibold text-primary">{item.day}</h3>
-                                <p className="font-medium text-foreground">{item.title}</p>
-                            </div>
-                            <ul className="mt-4 space-y-4">
-                                {item.activities.map((activity, actIndex) => (
-                                    <li key={actIndex} className="relative pl-6">
-                                        <div className="absolute left-[-22px] top-[5px] flex items-center justify-center">
-                                          <div className="h-4 w-4 rounded-full bg-secondary ring-4 ring-background"></div>
-                                        </div>
-                                         <div className="absolute left-[-22px] top-[5px] flex items-center justify-center text-muted-foreground">
-                                          {getIconForActivity(activity)}
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{activity}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-                </div>
+    <div className="space-y-12">
+      {itinerary.days.map((day, index) => (
+        <Card key={index} className="overflow-hidden shadow-lg border-l-4 border-primary">
+          <div className="relative h-48">
+            {day.imageUrl ? (
+              <Image 
+                src={day.imageUrl} 
+                alt={day.title} 
+                fill 
+                className="object-cover" 
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
             ) : (
-                <div className="text-center text-muted-foreground">
-                    <p>No detailed itinerary items found.</p>
-                    <p className="text-sm">The itinerary might not be in a recognized format.</p>
-                </div>
+                <div className="h-full w-full bg-muted"></div>
             )}
-        </CardContent>
-    </Card>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
+            <div className="absolute bottom-0 left-0 p-6">
+              <h2 className="text-3xl font-bold font-headline text-white">Day {day.day}</h2>
+              <p className="text-lg text-white/90">{day.title}</p>
+            </div>
+          </div>
+          <CardContent className="p-6">
+            <div className="relative border-l-2 border-dashed border-border/80 space-y-8">
+              {day.activities.map((activity, actIndex) => (
+                <div key={actIndex} className="relative pl-8">
+                     <div className="absolute left-[-11px] top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        {getIconForActivity(activity.title)}
+                     </div>
+                    <h4 className="font-semibold text-lg">{activity.title}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                    {activity.imageUrl && (
+                        <div className="mt-4 relative h-48 w-full rounded-lg overflow-hidden border">
+                            <Image 
+                                src={activity.imageUrl} 
+                                alt={activity.title} 
+                                fill 
+                                className="object-cover"
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                             />
+                        </div>
+                    )}
+                    {activity.link && (
+                        <Link href={activity.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-primary hover:underline mt-3">
+                            <LinkIcon className="mr-1.5 h-3.5 w-3.5" />
+                            Find out more
+                        </Link>
+                    )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 };
 

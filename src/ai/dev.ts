@@ -10,6 +10,7 @@ import { dotprompt } from '@genkit-ai/dotprompt';
 // Import your flows here.
 import '@/ai/flows/ai-itinerary-generation.ts';
 import '@/ai/flows/ai-personal-trip-assistant.ts';
+import '@/ai/flows/ai-enrich-itinerary.ts';
 
 genkit({
   plugins: [

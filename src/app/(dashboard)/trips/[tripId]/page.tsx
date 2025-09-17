@@ -8,6 +8,9 @@ import Image from 'next/image';
 import { TripMap } from '@/components/trip/trip-map';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 import ItineraryTimeline from '@/components/trip/itinerary-timeline';
+import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
+import type { Trip } from '@/lib/types';
+
 
 type TripPageProps = {
   params: {
@@ -16,11 +19,19 @@ type TripPageProps = {
 };
 
 export default async function TripPage({ params: { tripId } }: TripPageProps) {
-  const trip = await getTripById(tripId);
+  const tripData = await getTripById(tripId);
 
-  if (!trip) {
+  if (!tripData) {
     notFound();
   }
+
+  // Enrich the itinerary on the server
+  const enrichedOutput = await enrichItinerary({ itinerary: tripData.itinerary });
+  const trip: Trip = {
+    ...tripData,
+    enrichedItinerary: enrichedOutput.enrichedItinerary,
+  };
+
 
   const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
 
@@ -50,7 +61,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
           <TabsTrigger value="expenses"><Wallet className="w-4 h-4 mr-2" />Expenses</TabsTrigger>
         </TabsList>
         <TabsContent value="itinerary">
-            <ItineraryTimeline itinerary={trip.itinerary} />
+            <ItineraryTimeline itinerary={trip.enrichedItinerary} />
         </TabsContent>
         <TabsContent value="map">
             <TripMap destination={trip.destination} />
