@@ -7,6 +7,7 @@ import { AssistantCard } from '@/components/trip/assistant-card';
 import Image from 'next/image';
 import { TripMap } from '@/components/trip/trip-map';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
+import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 
 type TripPageProps = {
   params: {
@@ -49,15 +50,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
           <TabsTrigger value="expenses"><Wallet className="w-4 h-4 mr-2" />Expenses</TabsTrigger>
         </TabsList>
         <TabsContent value="itinerary">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your AI-Generated Itinerary</CardTitle>
-              <CardDescription>A detailed plan for your trip to {trip.destination}.</CardDescription>
-            </CardHeader>
-            <CardContent className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap">
-              {trip.itinerary}
-            </CardContent>
-          </Card>
+            <ItineraryTimeline itinerary={trip.itinerary} />
         </TabsContent>
         <TabsContent value="map">
             <TripMap destination={trip.destination} />
