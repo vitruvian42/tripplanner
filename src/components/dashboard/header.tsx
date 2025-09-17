@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, LogOut, Menu, Package, Search, Settings, Users } from 'lucide-react';
+import { Home, LogOut, Menu, Package, Search, Settings, Users, Map } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,15 +59,15 @@ export default function DashboardHeader() {
               <Home className="h-5 w-5" />
               My Trips
             </Link>
-            <Link href="#" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground">
-              <Package className="h-5 w-5" />
+            <Link href="/discover" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+              <Map className="h-5 w-5" />
               Discover
             </Link>
-            <Link href="#" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+            <Link href="/collaborate" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
               <Users className="h-5 w-5" />
               Shared With Me
             </Link>
-            <Link href="#" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+            <Link href="/settings" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
               <Settings className="h-5 w-5" />
               Settings
             </Link>
@@ -101,7 +101,7 @@ export default function DashboardHeader() {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
           <DropdownMenuItem>Support</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
