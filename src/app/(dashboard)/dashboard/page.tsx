@@ -30,7 +30,8 @@ export default function DashboardPage() {
     }
 
     setLoading(true);
-    const q = query(collection(db, 'trips'), where('ownerId', '==', user.uid));
+    // Corrected query to filter by the 'collaborators' array, which aligns with our new security rules.
+    const q = query(collection(db, 'trips'), where('collaborators', 'array-contains', user.uid));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const userTrips: Trip[] = [];
