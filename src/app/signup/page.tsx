@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -80,23 +80,9 @@ export default function SignupPage() {
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      toast({
-        title: 'Account Created',
-        description: "Welcome to Wanderplan! You're being redirected to your dashboard.",
-      });
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Signup Failed',
-        description: error.message || 'An unknown error occurred with Google Sign-Up.',
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
+    const provider = new GoogleAuthProvider();
+    // The user will be redirected to the login page to handle the result.
+    await signInWithRedirect(auth, provider);
   }
 
   return (

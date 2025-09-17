@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
@@ -58,6 +58,32 @@ export default function LoginPage() {
     },
   });
 
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+        setIsGoogleLoading(true);
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                toast({
+                    title: 'Login Successful',
+                    description: "Welcome back! You're being redirected to your dashboard.",
+                });
+                router.push('/dashboard');
+            }
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: error.message || 'An unknown error occurred with Google Sign-In.',
+            });
+        } finally {
+            setIsGoogleLoading(false);
+        }
+    };
+    handleRedirectResult();
+  }, [router, toast]);
+
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
@@ -80,23 +106,8 @@ export default function LoginPage() {
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      toast({
-        title: 'Login Successful',
-        description: "Welcome! You're being redirected to your dashboard.",
-      });
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: error.message || 'An unknown error occurred with Google Sign-In.',
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
+    const provider = new GoogleAuthProvider();
+    await signInWithRedirect(auth, provider);
   }
 
   return (
