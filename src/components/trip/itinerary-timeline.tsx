@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CircleCheck, Milestone, Utensils, Bed, Footprints } from 'lucide-react';
+import { CircleCheck, Milestone, Utensils, Bed, Footprints, Mountain, Building, Ship, Sun } from 'lucide-react';
 import React from 'react';
 
 type ItineraryTimelineProps = {
@@ -20,61 +20,75 @@ const getIconForActivity = (activity: string) => {
   if (lowerCaseActivity.includes('lunch') || lowerCaseActivity.includes('dinner') || lowerCaseActivity.includes('breakfast') || lowerCaseActivity.includes('food') || lowerCaseActivity.includes('cuisine') || lowerCaseActivity.includes('restaurant')) {
     return <Utensils className="h-4 w-4" />;
   }
-  if (lowerCaseActivity.includes('check-in') || lowerCaseActivity.includes('hotel') || lowerCaseActivity.includes('check in')) {
+  if (lowerCaseActivity.includes('check-in') || lowerCaseActivity.includes('hotel') || lowerCaseActivity.includes('check in') || lowerCaseActivity.includes('accommodation')) {
     return <Bed className="h-4 w-4" />;
   }
-    if (lowerCaseActivity.includes('arrive') || lowerCaseActivity.includes('depart') || lowerCaseActivity.includes('flight')) {
+  if (lowerCaseActivity.includes('arrive') || lowerCaseActivity.includes('depart') || lowerCaseActivity.includes('flight')) {
     return <Milestone className="h-4 w-4" />;
   }
-  if (lowerCaseActivity.includes('explore') || lowerCaseActivity.includes('walk') || lowerCaseActivity.includes('tour')) {
+  if (lowerCaseActivity.includes('explore') || lowerCaseActivity.includes('walk') || lowerCaseActivity.includes('tour') || lowerCaseActivity.includes('stroll')) {
     return <Footprints className="h-4 w-4" />;
+  }
+  if (lowerCaseActivity.includes('museum') || lowerCaseActivity.includes('landmark') || lowerCaseActivity.includes('castle') || lowerCaseActivity.includes('palace')) {
+    return <Building className="h-4 w-4" />;
+  }
+  if (lowerCaseActivity.includes('hike') || lowerCaseActivity.includes('mountain') || lowerCaseActivity.includes('nature')) {
+    return <Mountain className="h-4 w-4" />;
+  }
+  if (lowerCaseActivity.includes('beach') || lowerCaseActivity.includes('relax') || lowerCaseActivity.includes('leisure')) {
+      return <Sun className="h-4 w-4" />;
+  }
+  if (lowerCaseActivity.includes('boat') || lowerCaseActivity.includes('cruise') || lowerCaseActivity.includes('ferry')) {
+      return <Ship className="h-4 w-4" />;
   }
   return <CircleCheck className="h-4 w-4" />;
 };
 
 const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary }) => {
-
   const parseItinerary = (text: string): ItineraryItem[] => {
     if (!text) return [];
-    
+
     const lines = text.split('\n').filter(line => line.trim() !== '');
     const days: ItineraryItem[] = [];
     let currentDay: ItineraryItem | null = null;
+    
+    const dayRegex = /^Day\s*(\d+)\s*[:-]?\s*(.*)/i;
 
-    lines.forEach(line => {
-      const dayMatch = line.match(/^Day\s*\d+\s*:(.*)/i);
+    for (const line of lines) {
+      const dayMatch = line.match(dayRegex);
       if (dayMatch) {
         if (currentDay) {
           days.push(currentDay);
         }
         currentDay = {
-          day: dayMatch[0].split(':')[0].trim(),
-          title: dayMatch[1].trim(),
-          activities: []
+          day: `Day ${dayMatch[1]}`,
+          title: dayMatch[2].trim(),
+          activities: [],
         };
-      } else if (currentDay && (line.trim().startsWith('-') || line.trim().startsWith('*'))) {
-        currentDay.activities.push(line.trim().substring(1).trim());
-      } else if (currentDay && line.trim()) {
-         // This handles activities that don't start with a bullet but are part of a day.
-        currentDay.activities.push(line.trim());
+      } else if (currentDay) {
+          const activity = line.trim().replace(/^[-*]\s*/, '');
+          if(activity) {
+            currentDay.activities.push(activity);
+          }
       }
-    });
+    }
 
     if (currentDay) {
       days.push(currentDay);
     }
     
-    // Fallback for non-structured text
+    // Fallback for unstructured text
     if (days.length === 0 && lines.length > 0) {
         return [{
-            day: 'Day 1',
-            title: 'Your Itinerary',
-            activities: lines
+            day: 'Your Itinerary',
+            title: 'Trip Details',
+            activities: lines.map(line => line.trim().replace(/^[-*]\s*/, ''))
         }];
     }
 
     return days;
   };
+
 
   const itineraryDays = parseItinerary(itinerary);
 
