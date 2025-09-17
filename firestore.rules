@@ -1,9 +1,26 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // A user can only read or write a trip if they are the owner of that trip.
+    // Default to denying all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Rules for the 'trips' collection
     match /trips/{tripId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.ownerId;
+      // Allow a user to get a single trip document if they are the owner.
+      allow get: if request.auth != null && request.auth.uid == resource.data.ownerId;
+      
+      // Allow a user to query the trips collection if they are filtering by their own ownerId.
+      // This is what allows the dashboard query to work.
+      allow list: if request.auth != null && request.query.get("ownerId") == request.auth.uid;
+
+      // Allow a user to create a trip if they are logged in and setting themselves as the owner.
+      allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+      
+      // Allow a user to update or delete a trip if they are the owner.
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
     }
   }
 }
