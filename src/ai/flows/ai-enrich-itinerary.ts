@@ -21,7 +21,7 @@ import { googleAI } from '@genkit-ai/googleai';
 const EnrichedActivitySchema = z.object({
   title: z.string().describe('The title of the activity (e.g., "Visit the War Remnants Museum").'),
   description: z.string().describe('A one or two-sentence, engaging description of the activity.'),
-  imageUrl: z.string().optional().describe('A URL for a relevant, high-quality image of the location or activity. Use Unsplash or other free image sources.'),
+  imageUrl: z.string().optional().describe('A URL for a relevant, high-quality, publicly accessible image of the location or activity.'),
   link: z.string().optional().describe('A URL to an official website or a Google Maps link for the location.'),
 });
 
@@ -61,7 +61,7 @@ const enrichPrompt = ai.definePrompt({
   model: googleAI.model('gemini-1.5-pro'), // Use a more powerful model for better JSON generation
   prompt: `You are a travel expert and a web researcher. Your task is to transform a raw text-based travel itinerary into a rich, structured JSON object.
 
-For each day and each activity, you must provide engaging descriptions and find relevant, high-quality, publicly accessible URLs for images and links. Do not invent fake URLs. For images, prefer direct image links from sources like Unsplash, Pexels, or Wikipedia Commons where possible.
+For each day and each activity, you must provide engaging descriptions and find relevant, high-quality, publicly accessible URLs for images and links. Do not invent fake URLs.
 
 Here is the raw itinerary:
 ---
