@@ -12,7 +12,18 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app;
+if (!getApps().length) {
+  try {
+    app = initializeApp(firebaseConfig);
+  } catch (e) {
+    console.error("Firebase initialization error", e);
+    throw new Error("Failed to initialize Firebase. Check your API keys.");
+  }
+} else {
+  app = getApp();
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
