@@ -1,6 +1,7 @@
 'use server';
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
+import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
@@ -24,21 +25,25 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
     console.log('[ACTION] Generating itinerary for:', tripData.destination);
     const itineraryOutput = await generateItinerary(tripData);
     console.log('[ACTION] Successfully generated itinerary.');
-    // For privacy and to keep logs clean, we can log a snippet.
-    console.log('[ACTION] Itinerary snippet:', itineraryOutput.itinerary.substring(0, 100) + '...');
 
-    // 2. Select a placeholder image based on a hash of the destination
+    // 2. Enrich the generated itinerary
+    console.log('[ACTION] Enriching itinerary for:', tripData.destination);
+    const enrichedOutput = await enrichItinerary({ itinerary: itineraryOutput.itinerary });
+    console.log('[ACTION] Successfully enriched itinerary.');
+
+    // 3. Select a placeholder image
     const destinationHash = tripData.destination
       .split('')
       .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const imageIndex = destinationHash % placeholderImages.length;
     const selectedImage = placeholderImages[imageIndex];
     
-    // 3. Save trip to Firestore
+    // 4. Save trip to Firestore
     console.log('[ACTION] Attempting to save trip to Firestore...');
     const tripPayload = {
       ...tripData,
       itinerary: itineraryOutput.itinerary,
+      enrichedItinerary: enrichedOutput.enrichedItinerary, // Store the structured data
       ownerId: userId,
       collaborators: [userId],
       createdAt: serverTimestamp(),
@@ -48,7 +53,7 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
     const docRef = await addDoc(collection(db, 'trips'), tripPayload);
     console.log('[ACTION] Successfully saved trip to Firestore with ID:', docRef.id);
 
-    // 4. Revalidate dashboard path to show new trip
+    // 5. Revalidate dashboard path to show new trip
     revalidatePath('/dashboard');
 
     return { success: true, tripId: docRef.id };

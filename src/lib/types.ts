@@ -31,9 +31,6 @@ export interface Trip {
   collaborators: string[];
   createdAt: Timestamp;
   imageId?: string;
-  // This will be populated on the fly on the trip page
+  // This is now stored in Firestore but may be missing from old documents.
   enrichedItinerary?: EnrichedItinerary; 
-  // DEPRECATED:
-  imageUrl?: string;
-  imageHint?: string;
 }

@@ -9,7 +9,8 @@ import { TripMap } from '@/components/trip/trip-map';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
-import type { Trip } from '@/lib/types';
+import type { Trip, EnrichedItinerary } from '@/lib/types';
+import { updateTrip } from '@/lib/firestore';
 
 
 type TripPageProps = {
@@ -19,18 +20,23 @@ type TripPageProps = {
 };
 
 export default async function TripPage({ params: { tripId } }: TripPageProps) {
-  const tripData = await getTripById(tripId);
+  let trip = await getTripById(tripId);
 
-  if (!tripData) {
+  if (!trip) {
     notFound();
   }
 
-  // Enrich the itinerary on the server
-  const enrichedOutput = await enrichItinerary({ itinerary: tripData.itinerary });
-  const trip: Trip = {
-    ...tripData,
-    enrichedItinerary: enrichedOutput.enrichedItinerary,
-  };
+  // If the trip doesn't have an enriched itinerary (e.g., old data),
+  // generate and save it now.
+  if (!trip.enrichedItinerary) {
+    console.log(`[TRIP PAGE] Trip ${tripId} missing enrichedItinerary. Generating...`);
+    const enrichedOutput = await enrichItinerary({ itinerary: trip.itinerary });
+    trip.enrichedItinerary = enrichedOutput.enrichedItinerary;
+
+    // Update the document in Firestore so we don't have to do this again.
+    await updateTrip(tripId, { enrichedItinerary: trip.enrichedItinerary });
+    console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
+  }
 
 
   const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
