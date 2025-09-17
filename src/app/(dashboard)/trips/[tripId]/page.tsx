@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Map, Bot, FileText, Users, Wallet } from 'lucide-react';
 import { AssistantCard } from '@/components/trip/assistant-card';
 import Image from 'next/image';
+import { TripMap } from '@/components/trip/trip-map';
 
 type TripPageProps = {
   params: {
@@ -56,18 +57,7 @@ export default async function TripPage({ params }: TripPageProps) {
           </Card>
         </TabsContent>
         <TabsContent value="map">
-          <Card>
-            <CardHeader>
-              <CardTitle>Trip Map</CardTitle>
-              <CardDescription>Visualizing your journey.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Map integration coming soon. Points of interest from your itinerary will be displayed here.</p>
-              <div className="w-full h-96 bg-muted rounded-lg mt-4 flex items-center justify-center">
-                <Map className="w-16 h-16 text-muted-foreground" />
-              </div>
-            </CardContent>
-          </Card>
+            <TripMap destination={trip.destination} />
         </TabsContent>
         <TabsContent value="assistant">
           <AssistantCard tripDetails={trip.itinerary} />
