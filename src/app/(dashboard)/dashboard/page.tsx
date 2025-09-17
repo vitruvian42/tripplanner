@@ -1,9 +1,7 @@
-
-
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Trip } from '@/lib/types';
@@ -29,7 +27,7 @@ export default function DashboardPage() {
     }
 
     setLoading(true);
-    const q = query(collection(db, 'trips'), where('collaborators', 'array-contains', user.uid));
+    const q = query(collection(db, 'trips'), limit(1));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const userTrips: Trip[] = [];
