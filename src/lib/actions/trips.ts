@@ -45,8 +45,7 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
       ownerId: userId,
       collaborators: [userId],
       createdAt: serverTimestamp(),
-      imageUrl: randomImage.imageUrl,
-      imageHint: randomImage.imageHint,
+      imageId: randomImage.id, // Save the ID of the image
     };
 
     const docRef = await addDoc(collection(db, 'trips'), tripPayload);

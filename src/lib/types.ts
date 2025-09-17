@@ -14,6 +14,8 @@ export interface Trip {
   ownerId: string;
   collaborators: string[];
   createdAt: Timestamp;
+  imageId?: string;
+  // DEPRECATED:
   imageUrl?: string;
   imageHint?: string;
 }

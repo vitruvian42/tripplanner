@@ -11,6 +11,7 @@ import { PlusCircle, Loader2 } from 'lucide-react';
 import { CreateTripDialog } from '@/components/dashboard/create-trip-dialog';
 import Image from 'next/image';
 import Link from 'next/link';
+import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -53,29 +54,32 @@ export default function DashboardPage() {
             </div>
         ) : trips.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
-                {trips.map((trip) => (
-                    <Card key={trip.id}>
-                        <CardHeader>
-                            <Image 
-                                src={trip.imageUrl || 'https://picsum.photos/seed/default/600/400'}
-                                alt={trip.destination}
-                                width={600}
-                                height={400}
-                                data-ai-hint={trip.imageHint || 'travel destination'}
-                                className="rounded-lg aspect-video object-cover"
-                            />
-                        </CardHeader>
-                        <CardContent>
-                            <CardTitle className="font-headline">{trip.destination}</CardTitle>
-                            <CardDescription>{new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}</CardDescription>
-                        </CardContent>
-                        <CardFooter>
-                            <Button asChild className="w-full">
-                                <Link href={`/trips/${trip.id}`}>View Trip</Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                ))}
+                {trips.map((trip) => {
+                    const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
+                    return (
+                        <Card key={trip.id}>
+                            <CardHeader>
+                                <Image 
+                                    src={imageInfo.imageUrl}
+                                    alt={trip.destination}
+                                    width={600}
+                                    height={400}
+                                    data-ai-hint={imageInfo.imageHint}
+                                    className="rounded-lg aspect-video object-cover"
+                                />
+                            </CardHeader>
+                            <CardContent>
+                                <CardTitle className="font-headline">{trip.destination}</CardTitle>
+                                <CardDescription>{new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}</CardDescription>
+                            </CardContent>
+                            <CardFooter>
+                                <Button asChild className="w-full">
+                                    <Link href={`/trips/${trip.id}`}>View Trip</Link>
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    );
+                })}
             </div>
         ) : (
             <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4">

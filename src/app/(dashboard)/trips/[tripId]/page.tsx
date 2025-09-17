@@ -6,6 +6,7 @@ import { Map, Bot, FileText, Users, Wallet } from 'lucide-react';
 import { AssistantCard } from '@/components/trip/assistant-card';
 import Image from 'next/image';
 import { TripMap } from '@/components/trip/trip-map';
+import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 
 type TripPageProps = {
   params: {
@@ -20,14 +21,16 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
     notFound();
   }
 
+  const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
+
   return (
     <div className="grid gap-4 md:gap-8">
         <div className="relative h-64 md:h-96 w-full">
             <Image
-                src={trip.imageUrl || 'https://picsum.photos/seed/trip-hero/1200/400'}
+                src={imageInfo.imageUrl}
                 alt={`Image of ${trip.destination}`}
                 fill
-                data-ai-hint={`${trip.imageHint} landscape`}
+                data-ai-hint={`${imageInfo.imageHint} landscape`}
                 className="object-cover rounded-xl"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl" />
