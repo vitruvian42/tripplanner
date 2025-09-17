@@ -8,8 +8,7 @@ const firebaseConfig = {
   projectId: "absolute-realm-470109-c9",
   storageBucket: "absolute-realm-470109-c9.appspot.com",
   messagingSenderId: "833486528271",
-  appId: "1:833486528271:web:2d4d1168ad22ffead6687a",
-  measurementId: "G-PTK02S4CV6"
+  appId: "1:833486528271:web:2d4d1168ad22ffead6687a"
 };
 
 
