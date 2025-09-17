@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "paris",
+      "description": "Eiffel Tower in Paris at sunset",
+      "imageUrl": "https://picsum.photos/seed/paris/600/400",
+      "imageHint": "paris landmark"
+    },
+    {
+      "id": "tokyo",
+      "description": "Shibuya Crossing in Tokyo at night",
+      "imageUrl": "https://picsum.photos/seed/tokyo/600/400",
+      "imageHint": "tokyo street"
+    },
+    {
+      "id": "rome",
+      "description": "The Colosseum in Rome, Italy",
+      "imageUrl": "https://picsum.photos/seed/rome/600/400",
+      "imageHint": "rome landmark"
+    },
+    {
+      "id": "new-york",
+      "description": "The skyline of New York City with the Empire State Building",
+      "imageUrl": "https://picsum.photos/seed/newyork/600/400",
+      "imageHint": "newyork skyline"
+    },
+    {
+      "id": "sydney",
+      "description": "Sydney Opera House and Harbour Bridge",
+      "imageUrl": "https://picsum.photos/seed/sydney/600/400",
+      "imageHint": "sydney landmark"
+    },
+    {
+      "id": "kyoto",
+      "description": "Fushimi Inari Shrine in Kyoto, Japan",
+      "imageUrl": "https://picsum.photos/seed/kyoto/600/400",
+      "imageHint": "kyoto shrine"
+    },
+    {
+      "id": "london",
+      "description": "The Tower Bridge in London",
+      "imageUrl": "https://picsum.photos/seed/london/600/400",
+      "imageHint": "london bridge"
+    },
+    {
+      "id": "cairo",
+      "description": "The Great Pyramids of Giza near Cairo, Egypt",
+      "imageUrl": "https://picsum.photos/seed/cairo/600/400",
+      "imageHint": "egypt pyramids"
+    }
+  ]
 }
