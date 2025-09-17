@@ -13,8 +13,8 @@ type TripPageProps = {
   };
 };
 
-export default async function TripPage({ params }: TripPageProps) {
-  const trip = await getTripById(params.tripId);
+export default async function TripPage({ params: { tripId } }: TripPageProps) {
+  const trip = await getTripById(tripId);
 
   if (!trip) {
     notFound();
