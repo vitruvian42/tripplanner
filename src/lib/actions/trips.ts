@@ -4,16 +4,7 @@ import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
-import fs from 'fs';
-import path from 'path';
-
-// Define the type for a single placeholder image
-type ImagePlaceholder = {
-  id: string;
-  description: string;
-  imageUrl: string;
-  imageHint: string;
-};
+import { placeholderImages } from '@/lib/placeholder-images';
 
 interface CreateTripParams {
   tripData: {
@@ -31,12 +22,13 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
     // 1. Generate itinerary using GenAI flow
     const itineraryOutput = await generateItinerary(tripData);
 
-    // 2. Select a random placeholder image by reading the JSON file directly
-    const jsonPath = path.join(process.cwd(), 'src', 'lib', 'placeholder-images.json');
-    const jsonFile = fs.readFileSync(jsonPath, 'utf-8');
-    const placeholderData = JSON.parse(jsonFile);
-    const placeholderImages: ImagePlaceholder[] = placeholderData.placeholderImages;
-    const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
+    // 2. Select a placeholder image based on a hash of the destination
+    // This provides a consistent image for the same destination
+    const destinationHash = tripData.destination
+      .split('')
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const imageIndex = destinationHash % placeholderImages.length;
+    const selectedImage = placeholderImages[imageIndex];
     
     // 3. Save trip to Firestore
     const tripPayload = {
@@ -45,7 +37,7 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
       ownerId: userId,
       collaborators: [userId],
       createdAt: serverTimestamp(),
-      imageId: randomImage.id, // Save the ID of the image
+      imageId: selectedImage.id, // Save the ID of the image
     };
 
     const docRef = await addDoc(collection(db, 'trips'), tripPayload);
