@@ -28,8 +28,8 @@ export default function DashboardPage() {
     }
 
     setLoading(true);
-    // Reverted query to filter by 'ownerId' for compatibility with simplified security rules.
-    const q = query(collection(db, 'trips'), where('ownerId', '==', user.uid));
+    // Query for trips where the user is a collaborator.
+    const q = query(collection(db, 'trips'), where('collaborators', 'array-contains', user.uid));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const userTrips: Trip[] = [];
