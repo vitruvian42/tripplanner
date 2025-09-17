@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAB785A_XtYTXJPonHrCHLYl8WD7fblglI",
+  apiKey: "AIzaSyC02x6Z_3Z9Q-iZ3s6p5g1vX6aC9H2b4jA",
   authDomain: "absolute-realm-470109-c9.firebaseapp.com",
   projectId: "absolute-realm-470109-c9",
   storageBucket: "absolute-realm-470109-c9.appspot.com",
