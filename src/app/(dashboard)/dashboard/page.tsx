@@ -22,16 +22,14 @@ export default function DashboardPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Ensure we have a user and, crucially, a user UID before making the query.
-    // This prevents a race condition on initial load.
     if (!user || !user.uid) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    // Corrected query to filter by the 'collaborators' array, which aligns with our new security rules.
-    const q = query(collection(db, 'trips'), where('collaborators', 'array-contains', user.uid));
+    // Reverted query to filter by 'ownerId' for compatibility with simplified security rules.
+    const q = query(collection(db, 'trips'), where('ownerId', '==', user.uid));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const userTrips: Trip[] = [];
@@ -41,7 +39,6 @@ export default function DashboardPage() {
       setTrips(userTrips);
       setLoading(false);
     }, (error) => {
-      // It's good practice to handle snapshot errors.
       console.error("Snapshot error:", error);
       setLoading(false);
     });
