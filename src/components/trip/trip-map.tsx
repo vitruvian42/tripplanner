@@ -16,7 +16,7 @@ export function TripMap({ destination }: TripMapProps) {
         <CardDescription>Visualizing your journey to {destination}.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="w-full h-96 bg-muted rounded-lg mt-4 overflow-hidden">
+        <div className="w-full h-96 bg-muted rounded-lg overflow-hidden">
           <iframe
             width="100%"
             height="100%"
