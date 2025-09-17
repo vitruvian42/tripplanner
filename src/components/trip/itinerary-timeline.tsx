@@ -3,9 +3,8 @@
 
 import React from 'react';
 import type { EnrichedItinerary, EnrichedActivity } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircleCheck, Link as LinkIcon, Building, Utensils, Bed, Footprints, Mountain, Ship, Sun } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 
 type ItineraryTimelineProps = {
@@ -47,17 +46,6 @@ const ActivityCard: React.FC<{ activity: EnrichedActivity }> = ({ activity }) =>
         </div>
         <h4 className="font-semibold text-lg">{activity.title}</h4>
         <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
-        {activity.imageUrl && (
-            <div className="mt-4 relative h-48 w-full rounded-lg overflow-hidden border">
-                <Image 
-                    src={activity.imageUrl} 
-                    alt={activity.title} 
-                    fill 
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-            </div>
-        )}
         {activity.link && (
             <Link href={activity.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-primary hover:underline mt-3">
                 <LinkIcon className="mr-1.5 h-3.5 w-3.5" />
@@ -82,29 +70,14 @@ const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary }) => {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       {itinerary.days.map((day, index) => (
-        <Card key={index} className="overflow-hidden shadow-lg border-l-4 border-primary">
-          <div className="relative h-48">
-            {day.imageUrl ? (
-              <Image 
-                src={day.imageUrl} 
-                alt={day.title} 
-                fill 
-                className="object-cover" 
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
-            ) : (
-                <div className="h-full w-full bg-muted"></div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
-            <div className="absolute bottom-0 left-0 p-6">
-              <h2 className="text-3xl font-bold font-headline text-white">Day {day.day}</h2>
-              <p className="text-lg text-white/90">{day.title}</p>
-            </div>
-          </div>
-          <CardContent className="p-6">
-            <div className="relative border-l-2 border-dashed border-border/80 space-y-8">
+        <Card key={index} className="overflow-hidden shadow-sm border-l-4 border-primary/80 bg-card">
+           <CardHeader>
+              <CardTitle className="font-headline text-2xl">Day {day.day}: {day.title}</CardTitle>
+           </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="relative border-l-2 border-dashed border-border/80 space-y-8 ml-1 mt-4">
               {day.activities.map((activity, actIndex) => (
                 <ActivityCard key={actIndex} activity={activity} />
               ))}

@@ -1,8 +1,9 @@
+
 // This is a server-side file.
 'use server';
 
 /**
- * @fileOverview Enriches a raw text itinerary with structured data, images, and links.
+ * @fileOverview Enriches a raw text itinerary with structured data and links.
  *
  * This file defines a Genkit flow that takes a string-based itinerary and converts it
  * into a structured JSON object with details for each day and activity, suitable for
@@ -21,7 +22,6 @@ import { googleAI } from '@genkit-ai/googleai';
 const EnrichedActivitySchema = z.object({
   title: z.string().describe('The title of the activity (e.g., "Visit the War Remnants Museum").'),
   description: z.string().describe('A one or two-sentence, engaging description of the activity.'),
-  imageUrl: z.string().optional().describe('A URL for a relevant, high-quality, publicly accessible image of the location or activity.'),
   link: z.string().optional().describe('A URL to an official website or a Google Maps link for the location.'),
 });
 
@@ -30,7 +30,6 @@ const EnrichedDaySchema = z.object({
   day: z.number().describe('The day number of the itinerary (e.g., 1, 2, 3).'),
   title: z.string().describe('A short, catchy title for the day (e.g., "Arrival in Ho Chi Minh City").'),
   activities: z.array(EnrichedActivitySchema).describe('A list of activities for the day.'),
-  imageUrl: z.string().optional().describe('A general image URL representing the main theme or location for the day.'),
 });
 
 // Define the schema for the full enriched itinerary
@@ -61,14 +60,14 @@ const enrichPrompt = ai.definePrompt({
   model: googleAI.model('gemini-1.5-pro'), // Use a more powerful model for better JSON generation
   prompt: `You are a travel expert and a web researcher. Your task is to transform a raw text-based travel itinerary into a rich, structured JSON object.
 
-For each day and each activity, you must provide engaging descriptions and find relevant, high-quality, publicly accessible URLs for images and links. Do not invent fake URLs.
+For each day and each activity, you must provide engaging descriptions and find relevant, publicly accessible URLs for links to official websites or Google Maps pages where available. Do not invent fake URLs.
 
 Here is the raw itinerary:
 ---
 {{{itinerary}}}
 ---
 
-Please process this text and return it in the specified JSON format. Ensure every activity has a title and a description. Providing an imageUrl and a link is highly encouraged for a better user experience.`,
+Please process this text and return it in the specified JSON format. Ensure every activity has a title and a description. Providing a link is highly encouraged for a better user experience.`,
 });
 
 const enrichItineraryFlow = ai.defineFlow(

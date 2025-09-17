@@ -6,7 +6,6 @@ export interface User extends FirebaseUser {}
 export interface EnrichedActivity {
   title: string;
   description: string;
-  imageUrl?: string;
   link?: string;
 }
 
@@ -14,7 +13,6 @@ export interface EnrichedDay {
   day: number;
   title: string;
   activities: EnrichedActivity[];
-  imageUrl?: string;
 }
 
 export interface EnrichedItinerary {
