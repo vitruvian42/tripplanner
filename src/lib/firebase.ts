@@ -3,12 +3,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAB785A_XtYTXJPonHrCHLYl8WD7fblglI",
-  authDomain: "absolute-realm-470109-c9.firebaseapp.com",
-  projectId: "absolute-realm-470109-c9",
-  storageBucket: "absolute-realm-470109-c9.appspot.com",
-  messagingSenderId: "833486528271",
-  appId: "1:833486528271:web:2d4d1168ad22ffead6687a"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
