@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -41,30 +42,28 @@ const getIconForActivity = (activityTitle: string) => {
 const ActivityCard: React.FC<{ activity: EnrichedActivity }> = ({ activity }) => {
   return (
     <div className="relative pl-8">
-      <div className="absolute left-[-5px] top-1 h-3 w-3 rounded-full bg-primary ring-4 ring-background"></div>
-      <div className="p-4 rounded-lg transition-shadow duration-300">
-        <h4 className="font-headline text-lg font-semibold text-primary">{activity.title}</h4>
-        <p className="mt-1 text-sm text-muted-foreground">{activity.description}</p>
+        <div className="absolute left-[-11px] top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            {getIconForActivity(activity.title)}
+        </div>
+        <h4 className="font-semibold text-lg">{activity.title}</h4>
+        <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
         {activity.imageUrl && (
-          <div className="mt-3 relative h-40 w-full rounded-lg overflow-hidden">
-            <Image 
-                src={activity.imageUrl} 
-                alt={activity.title} 
-                fill 
-                className="object-cover" 
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          </div>
+            <div className="mt-4 relative h-48 w-full rounded-lg overflow-hidden border">
+                <Image 
+                    src={activity.imageUrl} 
+                    alt={activity.title} 
+                    fill 
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+            </div>
         )}
         {activity.link && (
-          <Button asChild variant="link" className="p-0 h-auto mt-2">
-            <Link href={activity.link} target="_blank" rel="noopener noreferrer">
-              <LinkIcon className="mr-2 h-4 w-4" />
-              Learn More
+            <Link href={activity.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-primary hover:underline mt-3">
+                <LinkIcon className="mr-1.5 h-3.5 w-3.5" />
+                Find out more
             </Link>
-          </Button>
         )}
-      </div>
     </div>
   );
 };
@@ -107,30 +106,7 @@ const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary }) => {
           <CardContent className="p-6">
             <div className="relative border-l-2 border-dashed border-border/80 space-y-8">
               {day.activities.map((activity, actIndex) => (
-                <div key={actIndex} className="relative pl-8">
-                     <div className="absolute left-[-11px] top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                        {getIconForActivity(activity.title)}
-                     </div>
-                    <h4 className="font-semibold text-lg">{activity.title}</h4>
-                    <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
-                    {activity.imageUrl && (
-                        <div className="mt-4 relative h-48 w-full rounded-lg overflow-hidden border">
-                            <Image 
-                                src={activity.imageUrl} 
-                                alt={activity.title} 
-                                fill 
-                                className="object-cover"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                             />
-                        </div>
-                    )}
-                    {activity.link && (
-                        <Link href={activity.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-primary hover:underline mt-3">
-                            <LinkIcon className="mr-1.5 h-3.5 w-3.5" />
-                            Find out more
-                        </Link>
-                    )}
-                </div>
+                <ActivityCard key={actIndex} activity={activity} />
               ))}
             </div>
           </CardContent>
