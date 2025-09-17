@@ -16,6 +16,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 
 
 const ItineraryInputSchema = z.object({
@@ -41,6 +42,7 @@ const itineraryPrompt = ai.definePrompt({
   name: 'itineraryPrompt',
   input: {schema: ItineraryInputSchema},
   output: {schema: ItineraryOutputSchema},
+  model: googleAI.model('gemini-1.5-flash'),
   prompt: `You are an AI travel assistant. Generate a detailed trip itinerary based on the following information:
 
 Destination: {{{destination}}}
