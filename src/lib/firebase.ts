@@ -3,13 +3,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'fir-ui-demo-5334b.firebaseapp.com',
-  databaseURL: 'https://fir-ui-demo-5334b.firebaseio.com',
-  projectId: 'fir-ui-demo-5334b',
-  storageBucket: 'fir-ui-demo-5334b.appspot.com',
-  messagingSenderId: '563194165564',
-  appId: '1:563194165564:web:e45cc24fa24b1f69',
+  apiKey: "AIzaSyAB785A_XtYTXJPonHrCHLYl8WD7fblglI",
+  authDomain: "absolute-realm-470109-c9.firebaseapp.com",
+  projectId: "absolute-realm-470109-c9",
+  storageBucket: "absolute-realm-470109-c9.appspot.com",
+  messagingSenderId: "833486528271",
+  appId: "1:833486528271:web:2d4d1168ad22ffead6687a"
 };
 
 // Initialize Firebase
