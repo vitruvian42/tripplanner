@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -12,6 +13,7 @@ import { CreateTripDialog } from '@/components/dashboard/create-trip-dialog';
 import Image from 'next/image';
 import Link from 'next/link';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
+import { ClientOnly } from '@/components/ui/client-only';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -70,7 +72,11 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <CardTitle className="font-headline">{trip.destination}</CardTitle>
-                                <CardDescription>{new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}</CardDescription>
+                                <CardDescription>
+                                    <ClientOnly>
+                                        {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
+                                    </ClientOnly>
+                                </CardDescription>
                             </CardContent>
                             <CardFooter>
                                 <Button asChild className="w-full">
