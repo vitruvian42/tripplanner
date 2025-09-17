@@ -6,7 +6,7 @@ import { LandingFeatures } from '@/components/landing/features';
 import { useEffect, useState } from 'react';
 
 export default function Home() {
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [year, setYear] = useState<number | null>(null);
 
   useEffect(() => {
     setYear(new Date().getFullYear());
@@ -21,7 +21,7 @@ export default function Home() {
       </main>
       <footer className="bg-muted p-6 md:py-12 w-full">
         <div className="container mx-auto max-w-7xl text-center text-sm text-muted-foreground">
-          © {year} Wanderplan. All rights reserved.
+          © {year || new Date().getFullYear()} Wanderplan. All rights reserved.
         </div>
       </footer>
     </div>
