@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, initializeFirestore } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAB785A_XtYTXJPonHrCHLYl8WD7fblglI",
@@ -27,11 +27,7 @@ if (!getApps().length) {
 }
 
 const auth = getAuth(app);
-
-// Use initializeFirestore to apply settings
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-});
+const db = getFirestore(app);
 
 
 export { app, auth, db };
