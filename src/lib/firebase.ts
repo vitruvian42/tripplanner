@@ -3,12 +3,13 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "wanderplan-gcp-us.firebaseapp.com",
-  projectId: "wanderplan-gcp-us",
-  storageBucket: "wanderplan-gcp-us.appspot.com",
-  messagingSenderId: "33887595363",
-  appId: "1:33887595363:web:5d36b81d74e35bb259c60e",
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'fir-ui-demo-5334b.firebaseapp.com',
+  databaseURL: 'https://fir-ui-demo-5334b.firebaseio.com',
+  projectId: 'fir-ui-demo-5334b',
+  storageBucket: 'fir-ui-demo-5334b.appspot.com',
+  messagingSenderId: '563194165564',
+  appId: '1:563194165564:web:e45cc24fa24b1f69',
 };
 
 // Initialize Firebase
