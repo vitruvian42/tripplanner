@@ -11,6 +11,7 @@ import { dotprompt } from '@genkit-ai/dotprompt';
 import '@/ai/flows/ai-itinerary-generation.ts';
 import '@/ai/flows/ai-personal-trip-assistant.ts';
 import '@/ai/flows/ai-enrich-itinerary.ts';
+import '@/ai/flows/ai-find-hotel.ts';
 
 genkit({
   plugins: [

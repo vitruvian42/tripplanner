@@ -9,6 +9,8 @@ import { TripHighlights } from '@/components/trip/trip-highlights';
 import { TripOverviewCard } from '@/components/trip/trip-overview-card';
 import { AssistantCard } from '@/components/trip/assistant-card';
 import { TripMap } from '@/components/trip/trip-map';
+import { FindHotelCard } from '@/components/trip/find-hotel-card';
+
 
 type TripPageProps = {
   params: {
@@ -107,6 +109,11 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
             <div id="itinerary" className="scroll-mt-20">
                <h2 className="text-3xl font-bold font-headline mb-6">Your Itinerary</h2>
                <ItineraryTimeline itinerary={trip.enrichedItinerary} />
+            </div>
+
+            <div id="hotel" className="scroll-mt-20">
+               <h2 className="text-3xl font-bold font-headline mb-6">Hotel</h2>
+               <FindHotelCard destination={trip.destination} budget={trip.budget} />
             </div>
 
              <div id="assistant" className="scroll-mt-20">
