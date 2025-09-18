@@ -1,17 +1,12 @@
 import { getTripById } from '@/lib/firestore';
 import { notFound } from 'next/navigation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Map, Bot, FileText, Users, Wallet } from 'lucide-react';
-import { AssistantCard } from '@/components/trip/assistant-card';
 import Image from 'next/image';
-import { TripMap } from '@/components/trip/trip-map';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
-import type { Trip, EnrichedItinerary } from '@/lib/types';
 import { updateTrip } from '@/lib/firestore';
-
+import { TripHighlights } from '@/components/trip/trip-highlights';
+import { TripOverviewCard } from '@/components/trip/trip-overview-card';
 
 type TripPageProps = {
   params: {
@@ -38,66 +33,93 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
     console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
   }
 
-
   const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
+  const galleryImages = [
+    imageInfo,
+    ...Object.values(placeholderImageById).filter(img => img.id !== imageInfo.id).slice(0, 4)
+  ];
 
   return (
-    <div className="grid gap-4 md:gap-8">
-        <div className="relative h-64 md:h-96 w-full">
-            <Image
-                src={imageInfo.imageUrl}
-                alt={`Image of ${trip.destination}`}
-                fill
-                data-ai-hint={`${imageInfo.imageHint} landscape`}
-                className="object-cover rounded-xl"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl" />
-            <div className="absolute bottom-6 left-6">
-                <h1 className="text-4xl md:text-5xl font-bold font-headline text-white">{trip.destination}</h1>
-                <p className="text-lg text-white/90">{new Date(trip.startDate).toLocaleDateString('en-US', {month: 'long', day: 'numeric'})} - {new Date(trip.endDate).toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}</p>
-            </div>
+    <div className="w-full">
+      {/* Image Gallery Header */}
+      <div className="grid grid-cols-4 grid-rows-2 gap-2 h-96">
+        <div className="col-span-2 row-span-2 relative">
+           <Image
+              src={galleryImages[0].imageUrl}
+              alt={`Main image for ${trip.destination}`}
+              fill
+              data-ai-hint={`${galleryImages[0].imageHint} landscape`}
+              className="object-cover rounded-l-xl"
+              priority
+          />
         </div>
+        <div className="relative">
+           <Image
+              src={galleryImages[1].imageUrl}
+              alt={`Image 1 for ${trip.destination}`}
+              fill
+              data-ai-hint={galleryImages[1].imageHint}
+              className="object-cover"
+          />
+        </div>
+         <div className="relative">
+           <Image
+              src={galleryImages[2].imageUrl}
+              alt={`Image 2 for ${trip.destination}`}
+              fill
+              data-ai-hint={galleryImages[2].imageHint}
+              className="object-cover rounded-tr-xl"
+          />
+        </div>
+        <div className="relative">
+           <Image
+              src={galleryImages[3].imageUrl}
+              alt={`Image 3 for ${trip.destination}`}
+              fill
+              data-ai-hint={galleryImages[3].imageHint}
+              className="object-cover"
+          />
+        </div>
+        <div className="relative">
+           <Image
+              src={galleryImages[4].imageUrl}
+              alt={`Image 4 for ${trip.destination}`}
+              fill
+              data-ai-hint={galleryImages[4].imageHint}
+              className="object-cover rounded-br-xl"
+          />
+        </div>
+      </div>
 
-      <Tabs defaultValue="itinerary" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
-          <TabsTrigger value="itinerary"><FileText className="w-4 h-4 mr-2" />Itinerary</TabsTrigger>
-          <TabsTrigger value="map"><Map className="w-4 h-4 mr-2" />Map</TabsTrigger>
-          <TabsTrigger value="assistant"><Bot className="w-4 h-4 mr-2" />Assistant</TabsTrigger>
-          <TabsTrigger value="collaborators"><Users className="w-4 h-4 mr-2" />Collaborators</TabsTrigger>
-          <TabsTrigger value="expenses"><Wallet className="w-4 h-4 mr-2" />Expenses</TabsTrigger>
-        </TabsList>
-        <TabsContent value="itinerary">
-            <ItineraryTimeline itinerary={trip.enrichedItinerary} />
-        </TabsContent>
-        <TabsContent value="map">
-            <TripMap destination={trip.destination} />
-        </TabsContent>
-        <TabsContent value="assistant">
-          <AssistantCard tripDetails={trip.itinerary} />
-        </TabsContent>
-        <TabsContent value="collaborators">
-            <Card>
-            <CardHeader>
-                <CardTitle>Collaborators</CardTitle>
-                <CardDescription>Manage who is planning this trip with you.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p>Collaboration features coming soon.</p>
-            </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="expenses">
-            <Card>
-            <CardHeader>
-                <CardTitle>Expense Tracker</CardTitle>
-                <CardDescription>Manage your trip's budget.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p>Expense tracking features coming soon.</p>
-            </CardContent>
-            </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="container mx-auto max-w-7xl mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            <TripHighlights trip={trip} />
+
+            <div id="itinerary" className="scroll-mt-20">
+               <h2 className="text-3xl font-bold font-headline mb-6">Your Itinerary</h2>
+               <ItineraryTimeline itinerary={trip.enrichedItinerary} />
+            </div>
+
+             <div id="assistant" className="scroll-mt-20">
+               <h2 className="text-3xl font-bold font-headline mb-6">AI Assistant</h2>
+               {/* Assistant Component will go here */}
+            </div>
+
+            <div id="map" className="scroll-mt-20">
+               <h2 className="text-3xl font-bold font-headline mb-6">Map</h2>
+               {/* Map Component will go here */}
+            </div>
+          </div>
+          
+          {/* Sticky Sidebar */}
+          <div className="relative">
+            <TripOverviewCard trip={trip} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

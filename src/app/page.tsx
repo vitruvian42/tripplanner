@@ -13,14 +13,14 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <LandingHeader />
       <main className="flex-1">
         <LandingHero />
         <LandingFeatures />
       </main>
-      <footer className="bg-muted p-6 md:py-12 w-full">
-        <div className="container mx-auto max-w-7xl text-center text-sm text-muted-foreground">
+      <footer className="bg-muted/50">
+        <div className="container mx-auto max-w-7xl px-4 md:px-6 py-6 text-center text-sm text-muted-foreground">
           © {year || new Date().getFullYear()} Wanderplan. All rights reserved.
         </div>
       </footer>

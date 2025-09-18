@@ -28,7 +28,6 @@ export default function DashboardPage() {
     }
 
     setLoading(true);
-    // Correctly query for all trips where the user is a collaborator
     const q = query(collection(db, 'trips'), where('collaborators', 'array-contains', user.uid));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -63,34 +62,32 @@ export default function DashboardPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
         ) : trips.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4">
                 {trips.map((trip) => {
                     const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
                     return (
-                        <Card key={trip.id}>
-                            <CardHeader>
-                                <Image 
-                                    src={imageInfo.imageUrl}
-                                    alt={trip.destination}
-                                    width={600}
-                                    height={400}
-                                    data-ai-hint={imageInfo.imageHint}
-                                    className="rounded-lg aspect-video object-cover"
-                                />
-                            </CardHeader>
-                            <CardContent>
-                                <CardTitle className="font-headline">{trip.destination}</CardTitle>
-                                <CardDescription>
-                                    <ClientOnly>
-                                        {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}
-                                    </ClientOnly>
-                                </CardDescription>
-                            </CardContent>
-                            <CardFooter>
-                                <Button asChild className="w-full">
-                                    <Link href={`/trips/${trip.id}`}>View Trip</Link>
-                                </Button>
-                            </CardFooter>
+                        <Card key={trip.id} className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
+                             <Link href={`/trips/${trip.id}`} className="block">
+                                <CardHeader className="p-0">
+                                    <div className="aspect-[4/3] relative">
+                                        <Image 
+                                            src={imageInfo.imageUrl}
+                                            alt={trip.destination}
+                                            fill
+                                            data-ai-hint={imageInfo.imageHint}
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-4">
+                                    <CardTitle className="font-headline text-lg mb-1 truncate">{trip.destination}</CardTitle>
+                                    <CardDescription>
+                                        <ClientOnly>
+                                            {new Date(trip.startDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})} - {new Date(trip.endDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
+                                        </ClientOnly>
+                                    </CardDescription>
+                                </CardContent>
+                            </Link>
                         </Card>
                     );
                 })}
