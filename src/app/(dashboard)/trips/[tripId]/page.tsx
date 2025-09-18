@@ -1,3 +1,4 @@
+
 import { getTripById } from '@/lib/firestore';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -136,7 +137,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
           
           {/* Sticky Sidebar */}
           <div className="relative">
-            <TripOverviewCard trip={trip} />
+            <TripOverviewCard />
           </div>
         </div>
       </div>

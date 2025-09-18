@@ -1,16 +1,11 @@
 // src/components/trip/trip-overview-card.tsx
 'use client';
-import type { Trip } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Bot, FileText, Hotel, Map, Users } from 'lucide-react';
 import Link from 'next/link';
 
-type TripOverviewCardProps = {
-  trip: Trip;
-};
-
-export function TripOverviewCard({ trip }: TripOverviewCardProps) {
+export function TripOverviewCard() {
   const navItems = [
     { href: '#itinerary', label: 'Itinerary', icon: <FileText className="w-5 h-5"/> },
     { href: '#hotel', label: 'Hotel', icon: <Hotel className="w-5 h-5"/> },
