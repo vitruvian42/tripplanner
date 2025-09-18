@@ -16,6 +16,9 @@ const genericTerms = [
 export function TripMap({ destination, itinerary }: TripMapProps) {
   let mapSrc: string;
 
+  // Use the public Firebase API key for the map
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
   if (itinerary && itinerary.days && itinerary.days.length > 0) {
     const waypoints = itinerary.days
       .flatMap(day => day.activities)
@@ -33,18 +36,18 @@ export function TripMap({ destination, itinerary }: TripMapProps) {
       const origin = encodeURIComponent(destination);
       const encodedDestination = encodeURIComponent(destination); // Route ends at the start
       // Use Google Maps Directions API embed
-      mapSrc = `https://www.google.com/maps/embed/v1/directions?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&origin=${origin}&destination=${encodedDestination}&waypoints=${encodeURIComponent(waypoints)}`;
+      mapSrc = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${origin}&destination=${encodedDestination}&waypoints=${encodeURIComponent(waypoints)}`;
     } else {
       // Fallback if no valid waypoints are found
-      mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(destination)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+      mapSrc = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(destination)}&key=${apiKey}`;
     }
   } else {
     // Default map if there's no itinerary
-    mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(destination)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+    mapSrc = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(destination)}&key=${apiKey}`;
   }
   
   // Note: The Directions Embed API requires a billing-enabled API key.
-  // If process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set, this iframe may show an error.
+  // If the API key is not set or valid, this iframe may show an error.
 
   return (
     <Card>
