@@ -7,6 +7,8 @@ import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
 import { updateTrip } from '@/lib/firestore';
 import { TripHighlights } from '@/components/trip/trip-highlights';
 import { TripOverviewCard } from '@/components/trip/trip-overview-card';
+import { AssistantCard } from '@/components/trip/assistant-card';
+import { TripMap } from '@/components/trip/trip-map';
 
 type TripPageProps = {
   params: {
@@ -25,12 +27,16 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
   // generate and save it now.
   if (!trip.enrichedItinerary) {
     console.log(`[TRIP PAGE] Trip ${tripId} missing enrichedItinerary. Generating...`);
-    const enrichedOutput = await enrichItinerary({ itinerary: trip.itinerary });
-    trip.enrichedItinerary = enrichedOutput.enrichedItinerary;
+    try {
+      const enrichedOutput = await enrichItinerary({ itinerary: trip.itinerary });
+      trip.enrichedItinerary = enrichedOutput.enrichedItinerary;
 
-    // Update the document in Firestore so we don't have to do this again.
-    await updateTrip(tripId, { enrichedItinerary: trip.enrichedItinerary });
-    console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
+      // Update the document in Firestore so we don't have to do this again.
+      await updateTrip(tripId, { enrichedItinerary: trip.enrichedItinerary });
+      console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
+    } catch (e) {
+      console.error(`[TRIP PAGE] Failed to enrich itinerary for trip ${tripId}`, e);
+    }
   }
 
   const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
@@ -105,12 +111,12 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
 
              <div id="assistant" className="scroll-mt-20">
                <h2 className="text-3xl font-bold font-headline mb-6">AI Assistant</h2>
-               {/* Assistant Component will go here */}
+               <AssistantCard tripDetails={trip.itinerary} />
             </div>
 
             <div id="map" className="scroll-mt-20">
                <h2 className="text-3xl font-bold font-headline mb-6">Map</h2>
-               {/* Map Component will go here */}
+               <TripMap destination={trip.destination} />
             </div>
           </div>
           

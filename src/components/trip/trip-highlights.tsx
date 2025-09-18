@@ -7,7 +7,7 @@ import { format, differenceInDays } from 'date-fns';
 import { ClientOnly } from '../ui/client-only';
 
 type TripHighlightsProps = {
-  trip: Trip;
+  trip: Omit<Trip, 'createdAt' | 'itinerary' | 'enrichedItinerary'>;
 };
 
 const HighlightItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | React.ReactNode }) => (
