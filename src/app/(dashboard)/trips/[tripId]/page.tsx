@@ -1,4 +1,5 @@
 
+
 import { getTripById } from '@/lib/firestore';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -7,10 +8,11 @@ import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
 import { updateTrip } from '@/lib/firestore';
 import { TripHighlights } from '@/components/trip/trip-highlights';
-import { TripOverviewCard } from '@/components/trip/trip-overview-card';
 import { AssistantCard } from '@/components/trip/assistant-card';
 import { TripMap } from '@/components/trip/trip-map';
 import { FindHotelCard } from '@/components/trip/find-hotel-card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Hotel, Map as MapIcon, Bot } from 'lucide-react';
 
 
 type TripPageProps = {
@@ -101,11 +103,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
       </div>
 
       <div className="container mx-auto max-w-7xl mt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            <TripHighlights trip={{
+          <TripHighlights trip={{
               destination: trip.destination,
               startDate: trip.startDate,
               endDate: trip.endDate,
@@ -113,33 +111,32 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
               interests: trip.interests,
               collaborators: trip.collaborators,
             }} />
-
-            <div id="itinerary" className="scroll-mt-20">
+          
+          <Tabs defaultValue="itinerary" className="mt-8">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="itinerary"><FileText className="mr-2"/>Itinerary</TabsTrigger>
+              <TabsTrigger value="hotel"><Hotel className="mr-2"/>Hotel</TabsTrigger>
+              <TabsTrigger value="assistant"><Bot className="mr-2"/>AI Assistant</TabsTrigger>
+              <TabsTrigger value="map"><MapIcon className="mr-2"/>Map</TabsTrigger>
+            </TabsList>
+            <TabsContent value="itinerary" className="mt-6">
                <h2 className="text-3xl font-bold font-headline mb-6">Your Itinerary</h2>
                <ItineraryTimeline itinerary={trip.enrichedItinerary} />
-            </div>
-
-            <div id="hotel" className="scroll-mt-20">
-               <h2 className="text-3xl font-bold font-headline mb-6">Hotel</h2>
+            </TabsContent>
+            <TabsContent value="hotel" className="mt-6">
+              <h2 className="text-3xl font-bold font-headline mb-6">Hotel</h2>
                <FindHotelCard destination={trip.destination} budget={trip.budget} />
-            </div>
-
-             <div id="assistant" className="scroll-mt-20">
-               <h2 className="text-3xl font-bold font-headline mb-6">AI Assistant</h2>
+            </TabsContent>
+            <TabsContent value="assistant" className="mt-6">
+              <h2 className="text-3xl font-bold font-headline mb-6">AI Assistant</h2>
                <AssistantCard tripDetails={trip.itinerary} />
-            </div>
-
-            <div id="map" className="scroll-mt-20">
+            </TabsContent>
+             <TabsContent value="map" className="mt-6">
                <h2 className="text-3xl font-bold font-headline mb-6">Map</h2>
                <TripMap destination={trip.destination} />
-            </div>
-          </div>
-          
-          {/* Sticky Sidebar */}
-          <div className="relative">
-            <TripOverviewCard />
-          </div>
-        </div>
+            </TabsContent>
+          </Tabs>
+
       </div>
     </div>
   );
