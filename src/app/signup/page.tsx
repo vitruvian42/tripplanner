@@ -64,7 +64,7 @@ export default function SignupPage() {
       await createUserWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: 'Account Created',
-        description: "Welcome to Wanderplan! You're being redirected to your dashboard.",
+        description: "Welcome to Trippy! You're being redirected to your dashboard.",
       });
       router.push('/dashboard');
     } catch (error: any) {
