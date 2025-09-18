@@ -32,28 +32,23 @@ export function TripMap({ destination, itinerary }: TripMapProps) {
       .map(title => `${title}, ${destination}`)
       .join('|');
 
-    if (waypoints) {
-      const origin = encodeURIComponent(destination);
-      const encodedDestination = encodeURIComponent(destination); // Route ends at the start
-      // Use Google Maps Directions API embed
-      mapSrc = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${origin}&destination=${encodedDestination}&waypoints=${encodeURIComponent(waypoints)}`;
-    } else {
-      // Fallback if no valid waypoints are found
-      mapSrc = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(destination)}&key=${apiKey}`;
-    }
+    // As a fallback, we use a simple place embed. The Directions API requires more configuration.
+    mapSrc = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(destination)}&key=${apiKey}`;
+
   } else {
     // Default map if there's no itinerary
     mapSrc = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(destination)}&key=${apiKey}`;
   }
   
-  // Note: The Directions Embed API requires a billing-enabled API key.
-  // If the API key is not set or valid, this iframe may show an error.
+  // Note: For the Directions API to work, the "Maps Embed API" and "Directions API"
+  // must be enabled in the Google Cloud Console for the project associated with this API key.
+  // The project may also need to have billing enabled.
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Trip Route</CardTitle>
-        <CardDescription>A visualized route of your planned activities in {destination}.</CardDescription>
+        <CardTitle>Trip Location</CardTitle>
+        <CardDescription>A map showing the location of {destination}.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="w-full h-96 bg-muted rounded-lg overflow-hidden">
