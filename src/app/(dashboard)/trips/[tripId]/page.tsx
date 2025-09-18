@@ -133,7 +133,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
             </TabsContent>
              <TabsContent value="map" className="mt-6">
                <h2 className="text-3xl font-bold font-headline mb-6">Map</h2>
-               <TripMap destination={trip.destination} />
+               <TripMap destination={trip.destination} itinerary={trip.enrichedItinerary} />
             </TabsContent>
           </Tabs>
 
