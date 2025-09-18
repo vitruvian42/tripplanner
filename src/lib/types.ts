@@ -19,6 +19,18 @@ export interface EnrichedItinerary {
   days: EnrichedDay[];
 }
 
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  paidBy: {
+    uid: string;
+    displayName: string;
+  };
+  currency: string;
+  createdAt: string; // ISO string
+}
+
 export interface Trip {
   id: string;
   destination: string;
@@ -33,4 +45,5 @@ export interface Trip {
   imageId?: string;
   // This is now stored in Firestore but may be missing from old documents.
   enrichedItinerary?: EnrichedItinerary; 
+  expenses?: Expense[];
 }

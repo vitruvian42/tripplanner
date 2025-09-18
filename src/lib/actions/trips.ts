@@ -2,10 +2,11 @@
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import { placeholderImages } from '@/lib/placeholder-images';
+import { randomUUID } from 'crypto';
 
 interface CreateTripParams {
   tripData: {
@@ -48,6 +49,7 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
       collaborators: [userId],
       createdAt: serverTimestamp(),
       imageId: selectedImage.id,
+      expenses: [],
     };
 
     const docRef = await addDoc(collection(db, 'trips'), tripPayload);
@@ -66,4 +68,46 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
     
     return { success: false, error: error.message || 'An unknown error occurred during trip creation.' };
   }
+}
+
+interface AddExpenseParams {
+    tripId: string;
+    expenseData: {
+        description: string;
+        amount: number;
+        currency: string;
+    };
+    user: {
+        uid: string;
+        displayName: string;
+    };
+}
+
+export async function addExpenseAction({ tripId, expenseData, user }: AddExpenseParams): Promise<{ success: boolean; error?: string; }> {
+    try {
+        const tripRef = doc(db, 'trips', tripId);
+
+        const newExpense = {
+            id: randomUUID(),
+            description: expenseData.description,
+            amount: expenseData.amount,
+            currency: expenseData.currency,
+            paidBy: {
+                uid: user.uid,
+                displayName: user.displayName || 'Anonymous',
+            },
+            createdAt: new Date().toISOString(),
+        };
+
+        await updateDoc(tripRef, {
+            expenses: arrayUnion(newExpense)
+        });
+
+        revalidatePath(`/trips/${tripId}`);
+        return { success: true };
+
+    } catch (error: any) {
+        console.error('Error adding expense:', error);
+        return { success: false, error: 'Failed to add expense.' };
+    }
 }

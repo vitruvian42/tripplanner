@@ -12,7 +12,8 @@ import { AssistantCard } from '@/components/trip/assistant-card';
 import { TripMap } from '@/components/trip/trip-map';
 import { FindHotelCard } from '@/components/trip/find-hotel-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Hotel, Map as MapIcon, Bot } from 'lucide-react';
+import { FileText, Hotel, Map as MapIcon, Bot, Wallet } from 'lucide-react';
+import { ExpenseTracker } from '@/components/trip/expense-tracker';
 
 
 type TripPageProps = {
@@ -113,8 +114,9 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
             }} />
           
           <Tabs defaultValue="itinerary" className="mt-8">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="itinerary"><FileText className="mr-2"/>Itinerary</TabsTrigger>
+              <TabsTrigger value="expenses"><Wallet className="mr-2"/>Expenses</TabsTrigger>
               <TabsTrigger value="hotel"><Hotel className="mr-2"/>Hotel</TabsTrigger>
               <TabsTrigger value="assistant"><Bot className="mr-2"/>AI Assistant</TabsTrigger>
               <TabsTrigger value="map"><MapIcon className="mr-2"/>Map</TabsTrigger>
@@ -122,6 +124,10 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
             <TabsContent value="itinerary" className="mt-6">
                <h2 className="text-3xl font-bold font-headline mb-6">Your Itinerary</h2>
                <ItineraryTimeline itinerary={trip.enrichedItinerary} />
+            </TabsContent>
+             <TabsContent value="expenses" className="mt-6">
+                <h2 className="text-3xl font-bold font-headline mb-6">Expense Tracker</h2>
+                <ExpenseTracker trip={trip} />
             </TabsContent>
             <TabsContent value="hotel" className="mt-6">
               <h2 className="text-3xl font-bold font-headline mb-6">Hotel</h2>
