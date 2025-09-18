@@ -6,18 +6,20 @@ import { Input } from '../ui/input';
 
 export function LandingHero() {
   return (
-    <section className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center text-center text-white">
-      <Image
-        src="https://picsum.photos/seed/hero-main/1920/1080"
-        alt="Breathtaking landscape"
-        fill
-        data-ai-hint="travel landscape"
-        className="object-cover -z-10"
-        priority
-      />
-      <div className="absolute inset-0 bg-black/50 -z-10" />
+    <section className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center text-center text-white isolate">
+      <div className="absolute inset-0 z-10">
+        <Image
+          src="https://picsum.photos/seed/hero-main/1920/1080"
+          alt="Breathtaking landscape"
+          fill
+          data-ai-hint="travel landscape"
+          className="object-cover"
+          priority
+        />
+      </div>
+      <div className="absolute inset-0 bg-black/50 z-20" />
 
-      <div className="container mx-auto px-4 md:px-6 space-y-6">
+      <div className="container relative mx-auto px-4 md:px-6 space-y-6 z-30">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold font-headline tracking-tight">
           Find your next adventure
         </h1>
