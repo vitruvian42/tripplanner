@@ -31,9 +31,9 @@ export function TripMap({ destination, itinerary }: TripMapProps) {
 
     if (waypoints) {
       const origin = encodeURIComponent(destination);
-      const destination = encodeURIComponent(destination); // Route ends at the start
+      const encodedDestination = encodeURIComponent(destination); // Route ends at the start
       // Use Google Maps Directions API embed
-      mapSrc = `https://www.google.com/maps/embed/v1/directions?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&origin=${origin}&destination=${destination}&waypoints=${encodeURIComponent(waypoints)}`;
+      mapSrc = `https://www.google.com/maps/embed/v1/directions?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&origin=${origin}&destination=${encodedDestination}&waypoints=${encodeURIComponent(waypoints)}`;
     } else {
       // Fallback if no valid waypoints are found
       mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(destination)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
