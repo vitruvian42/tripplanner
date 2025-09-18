@@ -34,12 +34,7 @@ export async function findHotelForTrip(input: FindHotelInput): Promise<FindHotel
 const findHotelAgent = ai.definePrompt({
   name: 'findHotelAgent',
   tools: [findHotel],
-  prompt: `You are a travel agent. Your task is to find the best hotel for a user's trip.
-  1. Use the findHotel tool to search for a hotel based on the provided destination and budget.
-  2. Once the tool returns the hotel information, use that information to populate the final response.
-  
-  Destination: {{{destination}}}
-  Budget: {{{budget}}}`,
+  system: "You are a travel agent. Your task is to find a hotel for the user's trip by calling the `findHotel` tool with the provided destination and budget. Use the tool's output to populate your response.",
   input: { schema: FindHotelInputSchema },
   output: { schema: FindHotelOutputSchema },
 });
