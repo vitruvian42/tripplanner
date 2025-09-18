@@ -42,32 +42,32 @@ export default function DashboardHeader() {
   }
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6">
+    <header className="flex h-14 items-center gap-4 border-b bg-gray-900 text-gray-50 px-4 lg:h-[60px] lg:px-6 sticky top-0 z-40">
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+          <Button variant="outline" size="icon" className="shrink-0 md:hidden bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-50">
             <Menu className="h-5 w-5" />
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="flex flex-col">
+        <SheetContent side="left" className="flex flex-col bg-gray-900 text-gray-50 border-r-gray-800">
           <nav className="grid gap-2 text-lg font-medium">
             <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold mb-4">
               <Logo />
             </Link>
-            <Link href="/dashboard" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+            <Link href="/dashboard" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-gray-400 hover:text-gray-50">
               <Home className="h-5 w-5" />
               My Trips
             </Link>
-            <Link href="/discover" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+            <Link href="/discover" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-gray-400 hover:text-gray-50">
               <Map className="h-5 w-5" />
               Discover
             </Link>
-            <Link href="/collaborate" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+            <Link href="/collaborate" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-gray-400 hover:text-gray-50">
               <Users className="h-5 w-5" />
               Shared With Me
             </Link>
-            <Link href="/settings" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
+            <Link href="/settings" className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-gray-400 hover:text-gray-50">
               <Settings className="h-5 w-5" />
               Settings
             </Link>
@@ -78,11 +78,11 @@ export default function DashboardHeader() {
       <div className="w-full flex-1">
         <form>
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               type="search"
               placeholder="Search trips or destinations..."
-              className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+              className="w-full appearance-none bg-gray-800 text-gray-50 border-gray-700 pl-8 shadow-none md:w-2/3 lg:w-1/3 placeholder:text-gray-400"
             />
           </div>
         </form>
@@ -90,10 +90,10 @@ export default function DashboardHeader() {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="secondary" size="icon" className="rounded-full">
+          <Button variant="secondary" size="icon" className="rounded-full bg-gray-800 hover:bg-gray-700">
             <Avatar>
                 <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'}/>
-                <AvatarFallback>{getInitials(user?.email)}</AvatarFallback>
+                <AvatarFallback className="bg-gray-700 text-gray-300">{getInitials(user?.email)}</AvatarFallback>
             </Avatar>
             <span className="sr-only">Toggle user menu</span>
           </Button>
