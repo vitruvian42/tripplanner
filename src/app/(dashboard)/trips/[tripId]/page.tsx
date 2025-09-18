@@ -104,7 +104,14 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
           
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            <TripHighlights trip={trip} />
+            <TripHighlights trip={{
+              destination: trip.destination,
+              startDate: trip.startDate,
+              endDate: trip.endDate,
+              budget: trip.budget,
+              interests: trip.interests,
+              collaborators: trip.collaborators,
+            }} />
 
             <div id="itinerary" className="scroll-mt-20">
                <h2 className="text-3xl font-bold font-headline mb-6">Your Itinerary</h2>

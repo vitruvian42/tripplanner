@@ -1,13 +1,19 @@
 // src/components/trip/trip-highlights.tsx
 'use client';
 
-import type { Trip } from '@/lib/types';
 import { Calendar, Tag, Users, Wallet } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ClientOnly } from '../ui/client-only';
 
 type TripHighlightsProps = {
-  trip: Omit<Trip, 'createdAt' | 'itinerary' | 'enrichedItinerary'>;
+  trip: {
+    destination: string;
+    startDate: string;
+    endDate: string;
+    budget: string;
+    interests: string;
+    collaborators: string[];
+  };
 };
 
 const HighlightItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | React.ReactNode }) => (
