@@ -35,12 +35,11 @@ const findHotelAgent = ai.definePrompt({
   name: 'findHotelAgent',
   tools: [findHotel],
   prompt: `You are a travel agent. Your task is to find the best hotel for a user's trip.
-  Use the findHotel tool to search for a hotel based on the provided destination and budget.
+  1. Use the findHotel tool to search for a hotel based on the provided destination and budget.
+  2. Once the tool returns the hotel information, use that information to populate the final response.
   
   Destination: {{{destination}}}
-  Budget: {{{budget}}}
-
-  Once you have the hotel information, extract the name, price, and description for the final response.`,
+  Budget: {{{budget}}}`,
   input: { schema: FindHotelInputSchema },
   output: { schema: FindHotelOutputSchema },
 });
