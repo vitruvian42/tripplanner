@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -18,6 +18,9 @@ const AuthContext = createContext<AuthContextType>({
 
 // Helper function to save user data to Firestore
 const saveUserToFirestore = async (user: User) => {
+  const db = getFirebaseDb();
+  if (!db) return; // Don't run if firebase is not configured
+
   const userRef = doc(db, "users", user.uid);
   try {
     // Using setDoc with merge: true will create the document if it doesn't exist,
@@ -39,6 +42,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const auth = getFirebaseAuth();
+    if (!auth) {
+        // If firebase is not configured, we are not in a logged in state.
+        setLoading(false);
+        return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (user) {

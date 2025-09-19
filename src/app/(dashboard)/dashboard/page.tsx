@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Trip } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -20,9 +20,10 @@ export default function DashboardPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const db = getFirebaseDb();
 
   useEffect(() => {
-    if (!user || !user.uid) {
+    if (!user || !user.uid || !db) {
       setLoading(false);
       return;
     }
@@ -43,7 +44,7 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, db]);
 
   return (
     <div className="flex flex-1 flex-col">

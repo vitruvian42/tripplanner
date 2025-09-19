@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -6,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const auth = getFirebaseAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,6 +61,7 @@ export default function SignupPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth) return;
     setIsLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, values.email, values.password);
@@ -79,10 +82,26 @@ export default function SignupPage() {
   }
 
   async function handleGoogleSignIn() {
+    if (!auth) return;
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     // The user will be redirected to the login page to handle the result.
     await signInWithRedirect(auth, provider);
+  }
+
+  if (!auth) {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
+            <Card className="mx-auto max-w-sm w-full">
+                <CardHeader>
+                    <CardTitle>Configuration Error</CardTitle>
+                    <CardDescription>
+                        Firebase is not configured. Please check your environment variables.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+    )
   }
 
   return (

@@ -1,7 +1,7 @@
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,31 +12,41 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+let app: FirebaseApp | undefined;
+let auth: Auth | undefined;
+let db: Firestore | undefined;
 
-// Initialize Firebase
-let app;
-if (!getApps().length) {
+function initializeFirebase() {
   if (
+    !app &&
     firebaseConfig.apiKey &&
     firebaseConfig.authDomain &&
     firebaseConfig.projectId
   ) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    // This will now only log a warning if the config is truly missing,
-    // preventing the app from crashing during build or server-side rendering
-    // if env vars aren't loaded yet.
-    console.warn(
-      'Firebase client config is missing. Please set up your .env.local file.'
-    );
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   }
-} else {
-  app = getApp();
 }
 
-// Conditionally get auth and db to prevent errors when app is not initialized
-const auth = app ? getAuth(app) : undefined;
-const db = app ? getFirestore(app) : undefined;
+// Export functions to get the instances, which will initialize on first call
+export function getFirebaseApp() {
+  if (!app) {
+    initializeFirebase();
+  }
+  return app;
+}
 
+export function getFirebaseAuth() {
+  const firebaseApp = getFirebaseApp();
+  if (firebaseApp && !auth) {
+    auth = getAuth(firebaseApp);
+  }
+  return auth;
+}
 
-export { app, auth, db };
+export function getFirebaseDb() {
+  const firebaseApp = getFirebaseApp();
+  if (firebaseApp && !db) {
+    db = getFirestore(firebaseApp);
+  }
+  return db;
+}
