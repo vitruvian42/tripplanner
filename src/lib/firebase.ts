@@ -23,17 +23,20 @@ if (!getApps().length) {
   ) {
     app = initializeApp(firebaseConfig);
   } else {
+    // This will now only log a warning if the config is truly missing,
+    // preventing the app from crashing during build or server-side rendering
+    // if env vars aren't loaded yet.
     console.warn(
-      'Firebase config is missing. Please set up your .env.local file.'
+      'Firebase client config is missing. Please set up your .env.local file.'
     );
   }
 } else {
   app = getApp();
 }
 
+// Conditionally get auth and db to prevent errors when app is not initialized
 const auth = app ? getAuth(app) : undefined;
 const db = app ? getFirestore(app) : undefined;
 
 
 export { app, auth, db };
-
