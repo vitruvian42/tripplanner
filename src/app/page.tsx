@@ -17,7 +17,7 @@ export default function Home() {
       </main>
       <footer className="bg-muted/50">
         <div className="container mx-auto max-w-7xl px-4 md:px-6 py-6 text-center text-sm text-muted-foreground">
-          <ClientOnly>© {new Date().getFullYear()} Trippy. All rights reserved.</ClientOnly>
+          <ClientOnly>© {new Date().getFullYear()} Wanderplan. All rights reserved.</ClientOnly>
         </div>
       </footer>
     </div>

@@ -88,15 +88,18 @@ export default function LoginPage() {
 
   async function handleGoogleSignIn() {
     if (!auth) return;
+    setIsLoading(true); // Set loading state for immediate feedback
     try {
       const provider = new GoogleAuthProvider();
       await signInWithRedirect(auth, provider);
+      // No need to handle redirect result here, onAuthStateChanged will do it.
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Failed',
         description: error.message || 'An unknown error occurred with Google Sign-In.',
       });
+       setIsLoading(false); // Only set to false on error
     }
   }
 
@@ -171,6 +174,7 @@ export default function LoginPage() {
               </div>
             </div>
             <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <GoogleIcon className="mr-2 h-4 w-4" />
                 Google
             </Button>
