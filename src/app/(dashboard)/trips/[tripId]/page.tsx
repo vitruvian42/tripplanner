@@ -40,8 +40,12 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
       trip.enrichedItinerary = enrichedOutput.enrichedItinerary;
 
       // Update the document in Firestore so we don't have to do this again.
-      await updateTrip(tripId, { enrichedItinerary: trip.enrichedItinerary });
-      console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
+      if (trip.enrichedItinerary) {
+        await updateTrip(tripId, { enrichedItinerary: trip.enrichedItinerary });
+        console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
+      } else {
+        console.warn(`[TRIP PAGE] Enrichment process did not return a valid itinerary for trip ${tripId}.`);
+      }
     } catch (e) {
       console.error(`[TRIP PAGE] Failed to enrich itinerary for trip ${tripId}`, e);
       // The page will still render, but without the enriched itinerary.
