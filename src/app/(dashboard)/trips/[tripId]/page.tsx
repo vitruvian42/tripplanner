@@ -143,7 +143,11 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
             </TabsContent>
              <TabsContent value="expenses" className="mt-6">
                 <h2 className="text-3xl font-bold font-headline mb-6">Expense Tracker</h2>
-                <ExpenseTracker trip={trip} collaborators={collaborators} />
+                {collaborators && collaborators.length > 0 ? (
+                  <ExpenseTracker trip={trip} collaborators={collaborators} />
+                ) : (
+                  <p className="text-muted-foreground">Could not load collaborator data for expenses.</p>
+                )}
             </TabsContent>
             <TabsContent value="hotel" className="mt-6">
               <h2 className="text-3xl font-bold font-headline mb-6">Hotel</h2>
