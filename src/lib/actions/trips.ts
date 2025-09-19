@@ -27,7 +27,7 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
 
   if (!process.env.GEMINI_API_KEY) {
     console.error('[ACTION] ERROR: GEMINI_API_KEY is not set.');
-    return { success: false, error: 'The AI service is not configured. Please set the GEMINI_API_KEY.' };
+    return { success: false, error: 'The AI service is not configured. Please set the GEMINI_API_KEY in your environment variables.' };
   }
 
   try {

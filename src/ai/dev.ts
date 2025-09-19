@@ -23,6 +23,8 @@ const plugins: GenkitPlugin[] = [
 
 if (process.env.GEMINI_API_KEY) {
     plugins.push(googleAI());
+} else {
+    console.warn("GEMINI_API_KEY is not set. Google AI features will be disabled for the dev server.");
 }
 
 genkit({
