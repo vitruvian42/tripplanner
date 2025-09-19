@@ -1,4 +1,5 @@
 
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { EnrichedItinerary } from '@/lib/types';
 
@@ -33,7 +34,7 @@ export function TripMap({ destination, itinerary }: TripMapProps) {
   }
   
   // Construct the directions URL
-  const waypoints = itinerary?.days
+  const waypoints = (itinerary?.days ?? [])
     .flatMap(day => day.activities)
     // Filter out generic activities that don't represent a specific place
     .filter(activity => !activity.title.toLowerCase().includes('check-in') && !activity.title.toLowerCase().includes('breakfast') && !activity.title.toLowerCase().includes('lunch') && !activity.title.toLowerCase().includes('dinner'))

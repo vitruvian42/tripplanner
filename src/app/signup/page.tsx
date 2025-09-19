@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, type UserCredential } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, type UserCredential } from 'firebase/auth';
 import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -90,15 +90,13 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
         const provider = new GoogleAuthProvider();
-        const credential = await signInWithPopup(auth, provider);
-        handleSuccessfulSignup(credential);
+        await signInWithRedirect(auth, provider);
     } catch (error: any) {
         toast({
             variant: 'destructive',
             title: 'Signup Failed',
             description: error.message || 'An unknown error occurred with Google Sign-In.',
         });
-    } finally {
         setIsLoading(false);
     }
   }

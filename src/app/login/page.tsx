@@ -52,14 +52,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const auth = useMemo(() => (isFirebaseConfigured() ? getFirebaseAuth() : null), []);
   
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-  
   const handleSuccessfulLogin = (credential: UserCredential | null) => {
     if (!credential) return;
     toast({
@@ -91,16 +83,15 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();
-      const credential = await signInWithRedirect(auth, provider);
-      handleSuccessfulLogin(credential);
+      // Using signInWithRedirect, the result is handled by onAuthStateChanged
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Failed',
         description: error.message || 'An unknown error occurred with Google Sign-In.',
       });
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Only set loading to false on error
     }
   }
 
