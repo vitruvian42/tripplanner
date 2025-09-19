@@ -15,7 +15,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 
@@ -51,6 +52,14 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const auth = useMemo(() => (isFirebaseConfigured() ? getFirebaseAuth() : null), []);
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    // If not loading and user is logged in, redirect to dashboard
+    if (!loading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

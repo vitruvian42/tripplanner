@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { createTripAction } from '@/lib/actions/trips';
+import * as tripActions from '@/lib/actions/trips';
 import { useAuth } from '@/context/auth-context';
 
 import { Button } from '@/components/ui/button';
@@ -72,7 +72,7 @@ export function CreateTripDialog({ isOpen, onOpenChange }: CreateTripDialogProps
       budget: values.budget,
     };
 
-    const result = await createTripAction({ tripData, userId: user.uid });
+    const result = await tripActions.createTripAction({ tripData, userId: user.uid });
 
     if (result.success && result.tripId) {
       toast({

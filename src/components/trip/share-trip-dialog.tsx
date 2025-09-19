@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { shareTripAction } from '@/lib/actions/trips';
+import * as tripActions from '@/lib/actions/trips';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -38,7 +38,7 @@ export function ShareTripDialog({ tripId, trip, children }: ShareTripDialogProps
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    const result = await shareTripAction({
+    const result = await tripActions.shareTripAction({
       tripId,
       trip,
       invitee: {

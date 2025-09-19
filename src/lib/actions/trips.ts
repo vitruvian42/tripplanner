@@ -3,13 +3,14 @@
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
-import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, query, where, getDocs, writeBatch, setDoc } from 'firebase/firestore';
-import { db, auth as adminAuth } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
 import type { Expense, Trip } from '@/lib/types';
 import { sendTripInviteEmail, sendWelcomeEmail } from '@/lib/email';
+
+// NOTE: We are now using the Firebase Admin SDK for all Firestore operations.
+// We no longer import from 'firebase/firestore'.
 
 interface CreateTripParams {
   tripData: {
@@ -23,6 +24,12 @@ interface CreateTripParams {
 }
 
 export async function createTripAction({ tripData, userId }: CreateTripParams): Promise<{ success: boolean; tripId?: string; error?: string; }> {
+  const admin = await import('firebase-admin');
+  if (admin.apps.length === 0) {
+    admin.initializeApp();
+  }
+  const db = admin.firestore();
+
   console.log('[ACTION] Starting createTripAction for user:', userId);
 
   if (!process.env.GEMINI_API_KEY) {
@@ -56,12 +63,12 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
       enrichedItinerary: enrichedOutput.enrichedItinerary, // Store the structured data
       ownerId: userId,
       collaborators: [userId],
-      createdAt: serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(), // Admin SDK syntax
       imageId: selectedImage.id,
       expenses: [],
     };
 
-    const docRef = await addDoc(collection(db, 'trips'), tripPayload);
+    const docRef = await db.collection('trips').add(tripPayload); // Admin SDK syntax
     console.log('[ACTION] Successfully saved trip to Firestore with ID:', docRef.id);
 
     // 5. Revalidate dashboard path to show new trip
@@ -85,8 +92,14 @@ interface AddExpenseParams {
 }
 
 export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams): Promise<{ success: boolean; error?: string; }> {
+    const admin = await import('firebase-admin');
+    if (admin.apps.length === 0) {
+        admin.initializeApp();
+    }
+    const db = admin.firestore();
+
     try {
-        const tripRef = doc(db, 'trips', tripId);
+        const tripRef = db.collection('trips').doc(tripId); // Admin SDK syntax
 
         const newExpense: Expense = {
             id: randomUUID(),
@@ -94,8 +107,8 @@ export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams
             createdAt: new Date().toISOString(),
         };
 
-        await updateDoc(tripRef, {
-            expenses: arrayUnion(newExpense)
+        await tripRef.update({ // Admin SDK syntax
+            expenses: admin.firestore.FieldValue.arrayUnion(newExpense) // Admin SDK syntax
         });
 
         revalidatePath(`/trips/${tripId}`);
@@ -119,8 +132,14 @@ interface ShareTripParams {
 }
 
 export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
+    const admin = await import('firebase-admin');
+    if (admin.apps.length === 0) {
+        admin.initializeApp();
+    }
+    const db = admin.firestore();
+    const auth = admin.auth();
+
     try {
-        const auth = adminAuth;
         let inviteeId: string;
         let isNewUser = false;
 
@@ -146,8 +165,8 @@ export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams
                 console.log(`[ACTION] Created new placeholder user: ${inviteeId}`);
 
                 // Create user document in Firestore
-                const userDocRef = doc(db, 'users', inviteeId);
-                await setDoc(userDocRef, {
+                const userDocRef = db.collection('users').doc(inviteeId); // Admin SDK syntax
+                await userDocRef.set({ // Admin SDK syntax
                     uid: inviteeId,
                     email: invitee.email,
                     displayName: invitee.name,
@@ -161,9 +180,9 @@ export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams
         }
 
         // Add user to the trip's collaborators
-        const tripRef = doc(db, "trips", tripId);
-        await updateDoc(tripRef, {
-            collaborators: arrayUnion(inviteeId)
+        const tripRef = db.collection('trips').doc(tripId); // Admin SDK syntax
+        await tripRef.update({ // Admin SDK syntax
+            collaborators: admin.firestore.FieldValue.arrayUnion(inviteeId) // Admin SDK syntax
         });
         console.log(`[ACTION] Added ${inviteeId} to trip collaborators.`);
 

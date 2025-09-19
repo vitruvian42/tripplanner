@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { addExpenseAction } from '@/lib/actions/trips';
+import * as tripActions from '@/lib/actions/trips';
 import type { Collaborator } from '@/lib/types';
 import { useAuth } from '@/context/auth-context';
 
@@ -94,7 +94,7 @@ export function AddExpenseDialog({ isOpen, onOpenChange, tripId, collaborators }
       }
     };
 
-    const result = await addExpenseAction({ tripId, expenseData });
+    const result = await tripActions.addExpenseAction({ tripId, expenseData });
 
     if (result.success) {
       toast({ title: 'Expense Added', description: 'Your expense has been logged.' });
