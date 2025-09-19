@@ -3,13 +3,13 @@
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
-import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, where, query, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { db, admin } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
-import type { Expense, Collaborator } from '@/lib/types';
-import { auth } from 'firebase-admin';
+import type { Expense, Trip } from '@/lib/types';
+import { sendTripInviteEmail, sendWelcomeEmail } from '@/lib/email';
 
 interface CreateTripParams {
   tripData: {
@@ -104,31 +104,77 @@ export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams
 
 interface ShareTripParams {
     tripId: string;
-    inviteeEmail: string;
+    trip: Trip;
+    invitee: {
+        name: string;
+        email: string;
+        mobile: string;
+    };
 }
 
-export async function shareTripAction({ tripId, inviteeEmail }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
+export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
     try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("email", "==", inviteeEmail));
-        const querySnapshot = await getDocs(q);
+        const auth = admin.auth();
+        let inviteeId: string;
+        let isNewUser = false;
 
-        if (querySnapshot.empty) {
-            return { success: false, error: "User with that email does not exist." };
+        try {
+            const userRecord = await auth.getUserByEmail(invitee.email);
+            inviteeId = userRecord.uid;
+            console.log(`[ACTION] Found existing user: ${inviteeId}`);
+        } catch (error: any) {
+            if (error.code === 'auth/user-not-found') {
+                isNewUser = true;
+                console.log('[ACTION] User not found, creating placeholder user...');
+
+                // Create user in Firebase Auth
+                const newUserRecord = await auth.createUser({
+                    email: invitee.email,
+                    displayName: invitee.name,
+                    phoneNumber: invitee.mobile,
+                    emailVerified: false, // User will verify when they sign up properly
+                    // A secure, random password for the placeholder account
+                    password: `placeholder_${randomUUID()}`,
+                });
+                inviteeId = newUserRecord.uid;
+                console.log(`[ACTION] Created new placeholder user: ${inviteeId}`);
+
+                // Create user document in Firestore
+                const userDocRef = doc(db, 'users', inviteeId);
+                await setDoc(userDocRef, {
+                    uid: inviteeId,
+                    email: invitee.email,
+                    displayName: invitee.name,
+                    photoURL: null, // No photo yet
+                });
+                console.log(`[ACTION] Created Firestore document for new user.`);
+
+            } else {
+                throw error; // Rethrow other auth errors
+            }
         }
 
-        const inviteeDoc = querySnapshot.docs[0];
-        const inviteeId = inviteeDoc.id;
-
+        // Add user to the trip's collaborators
         const tripRef = doc(db, "trips", tripId);
         await updateDoc(tripRef, {
             collaborators: arrayUnion(inviteeId)
+        });
+        console.log(`[ACTION] Added ${inviteeId} to trip collaborators.`);
+
+        // Send emails
+        if (isNewUser) {
+            await sendWelcomeEmail({ name: invitee.name, email: invitee.email });
+        }
+        await sendTripInviteEmail({
+            name: invitee.name,
+            email: invitee.email,
+            trip: trip
         });
         
         revalidatePath(`/trips/${tripId}`);
         return { success: true };
     } catch (error: any) {
         console.error('Error sharing trip:', error);
-        return { success: false, error: "Failed to share trip." };
+        return { success: false, error: "Failed to share trip. " + error.message };
     }
 }

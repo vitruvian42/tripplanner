@@ -12,29 +12,41 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
+import type { Trip } from '@/lib/types';
 
 const formSchema = z.object({
+  name: z.string().min(2, { message: "Invitee's name is required." }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
+  mobile: z.string().min(10, { message: 'Please enter a valid mobile number.' }),
 });
 
 type ShareTripDialogProps = {
   tripId: string;
+  trip: Trip;
   children: React.ReactNode;
 };
 
-export function ShareTripDialog({ tripId, children }: ShareTripDialogProps) {
+export function ShareTripDialog({ tripId, trip, children }: ShareTripDialogProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { email: '' },
+    defaultValues: { name: '', email: '', mobile: '' },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    const result = await shareTripAction({ tripId, inviteeEmail: values.email });
+    const result = await shareTripAction({
+      tripId,
+      trip,
+      invitee: {
+        name: values.name,
+        email: values.email,
+        mobile: values.mobile,
+      },
+    });
 
     if (result.success) {
       toast({
@@ -57,21 +69,47 @@ export function ShareTripDialog({ tripId, children }: ShareTripDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline">Share Trip</DialogTitle>
           <DialogDescription>Invite others to plan this trip with you.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+             <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Invitee Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Jane Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email of Planner</FormLabel>
+                  <FormLabel>Invitee Email</FormLabel>
                   <FormControl>
                     <Input placeholder="planner@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="mobile"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Invitee Mobile</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+1 555-555-5555" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -117,7 +117,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
               interests: trip.interests,
               collaborators: collaborators,
             }} />
-            <ShareTripDialog tripId={trip.id}>
+            <ShareTripDialog tripId={trip.id} trip={trip}>
               <Button variant="outline">
                 <Share2 className="mr-2 h-4 w-4" /> Share
               </Button>
