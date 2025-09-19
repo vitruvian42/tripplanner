@@ -2,7 +2,8 @@
 'use server';
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
-import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
+import { deleteTrip } from '@/lib/firestore';
+
 import { revalidatePath } from 'next/cache';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
@@ -40,31 +41,26 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
   try {
     // 1. Generate itinerary using GenAI flow
     console.log('[ACTION] Generating itinerary for:', tripData.destination);
-    const itineraryOutput = await generateItinerary(tripData);
-    console.log('[ACTION] Successfully generated itinerary.');
+    const generatedEnrichedItinerary = await generateItinerary(tripData);
+    console.log('[ACTION] Successfully generated enriched itinerary.');
 
-    // 2. Enrich the generated itinerary
-    console.log('[ACTION] Enriching itinerary for:', tripData.destination);
-    const enrichedOutput = await enrichItinerary({ itinerary: itineraryOutput.itinerary });
-    console.log('[ACTION] Successfully enriched itinerary.');
-
-    // 3. Select a placeholder image
+    // 2. Select a placeholder image (or use image from generated itinerary if available)
     const destinationHash = tripData.destination
       .split('')
       .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const imageIndex = destinationHash % placeholderImages.length;
     const selectedImage = placeholderImages[imageIndex];
     
-    // 4. Save trip to Firestore
+    // 3. Save trip to Firestore
     console.log('[ACTION] Attempting to save trip to Firestore...');
     const tripPayload = {
       ...tripData,
-      itinerary: itineraryOutput.itinerary,
-      enrichedItinerary: enrichedOutput.enrichedItinerary, // Store the structured data
+      itinerary: JSON.stringify(generatedEnrichedItinerary), // Store the raw JSON string for backward compatibility if needed
+      enrichedItinerary: generatedEnrichedItinerary, // Store the structured data
       ownerId: userId,
       collaborators: [userId],
       createdAt: admin.firestore.FieldValue.serverTimestamp(), // Admin SDK syntax
-      imageId: selectedImage.id,
+      imageId: generatedEnrichedItinerary.hotel?.imageUrl || generatedEnrichedItinerary.days[0]?.activities[0]?.imageUrl || selectedImage.id, // Use generated image or fallback
       expenses: [],
     };
 
@@ -118,6 +114,25 @@ export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams
         console.error('Error adding expense:', error);
         return { success: false, error: 'Failed to add expense.' };
     }
+}
+
+export async function deleteTripAction(tripId: string): Promise<{ success: boolean; error?: string; }> {
+  const admin = await import('firebase-admin');
+  if (admin.apps.length === 0) {
+    admin.initializeApp();
+  }
+
+  try {
+    await deleteTrip(tripId); // Call the firestore function
+
+    revalidatePath('/dashboard'); // Revalidate dashboard to remove the deleted trip
+    revalidatePath(`/trips/${tripId}`); // Revalidate the specific trip page (will likely lead to notFound)
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting trip:', error);
+    return { success: false, error: 'Failed to delete trip.' };
+  }
 }
 
 

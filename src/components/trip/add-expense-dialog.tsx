@@ -86,7 +86,7 @@ export function AddExpenseDialog({ isOpen, onOpenChange, tripId, collaborators }
       currency: values.currency,
       paidBy: { uid: paidByCollaborator.uid, name: paidByCollaborator.name },
       split: {
-        type: 'EQUAL',
+        type: 'EQUAL' as 'EQUAL',
         splitBetween: values.splitBetween.map(uid => {
             const member = collaborators.find(c => c.uid === uid);
             return { uid: uid, name: member?.name || 'Unknown', amount: amountPerPerson }

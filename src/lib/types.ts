@@ -11,10 +11,28 @@ export interface Collaborator {
   photoURL?: string | null;
 }
 
+export interface Location {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
+export interface Hotel {
+  name: string;
+  description: string;
+  imageUrl?: string;
+  location: Location;
+}
+
 export interface EnrichedActivity {
   title: string;
   description: string;
   link?: string;
+  imageUrl?: string; // New: URL for an image related to the activity
+  location?: Location; // New: Precise location data
+  keynotes?: string[]; // New: Key notes about the place
+  waysToReach?: string[]; // New: How to reach the place
+  thingsToDo?: string[]; // New: Things to do at the place
 }
 
 export interface EnrichedDay {
@@ -25,6 +43,7 @@ export interface EnrichedDay {
 
 export interface EnrichedItinerary {
   days: EnrichedDay[];
+  hotel?: Hotel; // New: Best hotel suggestion for the trip
 }
 
 interface SplitDetail {

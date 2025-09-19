@@ -21,11 +21,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '4mb',
     },
   },
-  turbopack: {
-    // Disable Turbopack for builds to avoid potential conflicts.
-    // The `next dev --turbopack` command will still work for development.
-    enabled: false,
-  },
+  
 };
 
 export default nextConfig;

@@ -6,6 +6,8 @@ import type { EnrichedItinerary, EnrichedActivity } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { CircleCheck, Link as LinkIcon, Building, Utensils, Bed, Footprints, Mountain, Ship, Sun } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image'; // Add this import
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'; // Add this import
 
 type ItineraryTimelineProps = {
   itinerary?: EnrichedItinerary;
@@ -51,12 +53,63 @@ const ActivityCard: React.FC<{ activity: EnrichedActivity; isLast: boolean }> = 
 
       <div className='pb-10 ml-4'>
         <h4 className="font-semibold text-lg font-headline">{activity.title}</h4>
-        <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+        {activity.imageUrl && (
+          <div className="relative w-full h-48 mt-3 rounded-md overflow-hidden">
+            <Image
+              src={activity.imageUrl}
+              alt={activity.title}
+              fill
+              className="object-cover"
+            />
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground mt-3">{activity.description}</p>
         {activity.link && (
             <Link href={activity.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-primary hover:underline mt-3 font-medium">
                 Find out more
                 <LinkIcon className="ml-1.5 h-3.5 w-3.5" />
             </Link>
+        )}
+
+        {(activity.keynotes || activity.waysToReach || activity.thingsToDo) && (
+          <Accordion type="single" collapsible className="w-full mt-4" defaultValue="things-to-do">
+            {activity.keynotes && activity.keynotes.length > 0 && (
+              <AccordionItem value="keynotes">
+                <AccordionTrigger className="text-base font-medium">Key Notes</AccordionTrigger>
+                <AccordionContent>
+                  <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                    {activity.keynotes.map((note, i) => (
+                      <li key={i}>{note}</li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+            {activity.thingsToDo && activity.thingsToDo.length > 0 && (
+              <AccordionItem value="things-to-do">
+                <AccordionTrigger className="text-base font-medium">Things to Do</AccordionTrigger>
+                <AccordionContent>
+                  <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                    {activity.thingsToDo.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+            {activity.waysToReach && activity.waysToReach.length > 0 && (
+              <AccordionItem value="ways-to-reach">
+                <AccordionTrigger className="text-base font-medium">Ways to Reach</AccordionTrigger>
+                <AccordionContent>
+                  <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                    {activity.waysToReach.map((way, i) => (
+                      <li key={i}>{way}</li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+          </Accordion>
         )}
       </div>
     </div>

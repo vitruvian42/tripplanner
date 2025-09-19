@@ -1,5 +1,5 @@
 
-import { doc, getDoc, updateDoc, PartialWithFieldValue, collection, query, where, getDocs, setDoc, type Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, PartialWithFieldValue, collection, query, where, getDocs, setDoc, deleteDoc, type Timestamp } from 'firebase/firestore';
 import { getFirebaseDb, getFirebaseAuth } from './firebase';
 import type { Trip, FirestoreTrip, Collaborator } from './types';
 
@@ -29,6 +29,12 @@ export async function updateTrip(tripId: string, data: PartialWithFieldValue<Tri
 
   const docRef = doc(db, 'trips', tripId);
   await updateDoc(docRef, data);
+}
+
+export async function deleteTrip(tripId: string): Promise<void> {
+  const db = getFirebaseDb();
+  const docRef = doc(db, 'trips', tripId);
+  await deleteDoc(docRef);
 }
 
 export async function getCollaboratorDetails(uids: string[]): Promise<Collaborator[]> {

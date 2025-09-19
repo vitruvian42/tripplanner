@@ -28,8 +28,39 @@ const ItineraryInputSchema = z.object({
 });
 export type ItineraryInput = z.infer<typeof ItineraryInputSchema>;
 
+const LocationSchema = z.object({
+  lat: z.number(),
+  lng: z.number(),
+  address: z.string(),
+});
+
+const HotelSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  imageUrl: z.string().optional(),
+  location: LocationSchema,
+});
+
+const EnrichedActivitySchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  link: z.string().optional(),
+  imageUrl: z.string().optional(),
+  location: LocationSchema.optional(),
+  keynotes: z.array(z.string()).optional(),
+  waysToReach: z.array(z.string()).optional(),
+  thingsToDo: z.array(z.string()).optional(),
+});
+
+const EnrichedDaySchema = z.object({
+  day: z.number(),
+  title: z.string(),
+  activities: z.array(EnrichedActivitySchema),
+});
+
 const ItineraryOutputSchema = z.object({
-  itinerary: z.string().describe('A detailed trip itinerary including points of interest and recommendations.'),
+  days: z.array(EnrichedDaySchema),
+  hotel: HotelSchema.optional(),
 });
 export type ItineraryOutput = z.infer<typeof ItineraryOutputSchema>;
 
@@ -41,7 +72,7 @@ export async function generateItinerary(input: ItineraryInput): Promise<Itinerar
 const itineraryPrompt = ai.definePrompt({
   name: 'itineraryPrompt',
   input: {schema: ItineraryInputSchema},
-  output: {schema: ItineraryOutputSchema},
+  output: {schema: ItineraryOutputSchema}, // Use the new structured schema
   model: googleAI.model('gemini-1.5-flash'),
   prompt: `You are an AI travel assistant. Generate a detailed trip itinerary based on the following information:
 
@@ -51,9 +82,45 @@ End Date: {{{endDate}}}
 Interests: {{{interests}}}
 Budget: {{{budget}}}
 
-Include points of interest, activity recommendations, and estimated costs.
+Generate the output as a JSON object that strictly conforms to the following TypeScript interface:
 
-Format the output as a well-structured itinerary.`, // Ensure this is a single string
+interface Location {
+  lat: number;
+  lng: number;
+  address: string;
+}
+
+interface Hotel {
+  name: string;
+  description: string;
+  imageUrl?: string;
+  location: Location;
+}
+
+interface EnrichedActivity {
+  title: string;
+  description: string;
+  link?: string;
+  imageUrl?: string; // URL for an image related to the activity
+  location?: Location; // Precise location data (latitude, longitude, address)
+  keynotes?: string[]; // Key notes about the place
+  waysTo Reach?: string[]; // How to reach the place
+  thingsToDo?: string[]; // Things to do at the place
+}
+
+interface EnrichedDay {
+  day: number;
+  title: string;
+  activities: EnrichedActivity[];
+}
+
+interface EnrichedItinerary {
+  days: EnrichedDay[];
+  hotel?: Hotel; // Best hotel suggestion for the trip
+}
+
+Ensure that for each activity, if you can find a real, publicly accessible image URL, provide it. Otherwise, omit the 'imageUrl' field. Provide precise latitude, longitude, and address. For the hotel, if you can find a real, publicly accessible image URL, provide it. Otherwise, omit the 'imageUrl' field. Also provide its name, description, and location.
+`,
 });
 
 const itineraryFlow = ai.defineFlow(
@@ -64,6 +131,6 @@ const itineraryFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await itineraryPrompt(input);
-    return output!;
+    return output!; // The output is already structured JSON
   }
 );
