@@ -44,6 +44,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
       console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
     } catch (e) {
       console.error(`[TRIP PAGE] Failed to enrich itinerary for trip ${tripId}`, e);
+      // The page will still render, but without the enriched itinerary.
     }
   }
 
@@ -134,7 +135,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
             </TabsList>
             <TabsContent value="itinerary" className="mt-6">
                <h2 className="text-3xl font-bold font-headline mb-6">Your Itinerary</h2>
-               <ItineraryTimeline itinerary={trip.enrichedItinerary} />
+               <ItineraryTimeline itinerary={trip.enrichedItinerary ?? { days: [] }} />
             </TabsContent>
              <TabsContent value="expenses" className="mt-6">
                 <h2 className="text-3xl font-bold font-headline mb-6">Expense Tracker</h2>

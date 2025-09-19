@@ -12,6 +12,8 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+console.log(firebaseConfig)
+
 // This function checks if the client-side Firebase config is complete.
 function isFirebaseConfigured(): boolean {
   return (
