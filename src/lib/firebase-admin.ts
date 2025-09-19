@@ -1,16 +1,24 @@
 
 import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
+import { credential } from 'firebase-admin';
 
-// This simplified initialization works for both local development and deployed environments.
-// - In a deployed Google Cloud environment (like App Hosting), it uses the built-in service account.
-// - For local development, it uses Application Default Credentials (ADC).
-//   You must authenticate locally by running `gcloud auth application-default login` in your terminal.
 if (!admin.apps.length) {
   try {
-    admin.initializeApp();
+    if (process.env.FIREBASE_ADMIN_SDK_CONFIG) {
+      // For local development, use the service account from the environment variable.
+      const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_CONFIG);
+      admin.initializeApp({
+        credential: credential.cert(serviceAccount)
+      });
+      console.log('Firebase Admin SDK initialized with service account.');
+    } else {
+      // For deployed environments (like App Hosting), use Application Default Credentials.
+      admin.initializeApp();
+      console.log('Firebase Admin SDK initialized with default credentials.');
+    }
   } catch (error) {
-    console.error("Firebase admin initialization error. For local development, ensure you've authenticated via `gcloud auth application-default login`.", error);
+    console.error('Firebase Admin SDK initialization error:', error);
   }
 }
 
