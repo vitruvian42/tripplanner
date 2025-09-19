@@ -12,7 +12,9 @@ type ExpenseSummaryProps = {
 };
 
 export function ExpenseSummary({ expenses, collaborators }: ExpenseSummaryProps) {
-  if (expenses.length === 0) {
+  const validExpenses = expenses.filter(e => e && e.split && e.split.splitBetween);
+  
+  if (validExpenses.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -26,14 +28,14 @@ export function ExpenseSummary({ expenses, collaborators }: ExpenseSummaryProps)
     );
   }
 
-  const currency = expenses.length > 0 ? expenses[0].currency : 'INR';
+  const currency = validExpenses.length > 0 ? validExpenses[0].currency : 'INR';
   const formatCurrency = (amount: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(amount);
 
   // 1. Calculate balances for each person
   const balances: { [uid: string]: number } = {};
   collaborators.forEach(c => balances[c.uid] = 0);
 
-  expenses.forEach(expense => {
+  validExpenses.forEach(expense => {
     // Add to the person who paid
     balances[expense.paidBy.uid] += expense.amount;
     

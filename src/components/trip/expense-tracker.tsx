@@ -16,7 +16,8 @@ type ExpenseTrackerProps = {
 
 export function ExpenseTracker({ trip, collaborators }: ExpenseTrackerProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const expenses = trip.expenses || [];
+    // Filter out expenses that are missing the `split` property to handle old data.
+    const expenses = (trip.expenses || []).filter(e => e.split);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
