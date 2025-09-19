@@ -2,11 +2,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, getRedirectResult, type Auth, type UserCredential } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, type UserCredential } from 'firebase/auth';
 import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,8 +15,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
+import { ClientOnly } from '@/components/ui/client-only';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg role="img" viewBox="0 0 24 24" {...props}>
@@ -46,11 +47,10 @@ const formSchema = z.object({
 
 export default function SignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const auth = useMemo(() => isFirebaseConfigured() ? getFirebaseAuth() : null, []);
+  const auth = useMemo(() => (isFirebaseConfigured() ? getFirebaseAuth() : null), []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -69,38 +69,6 @@ export default function SignupPage() {
     router.push('/dashboard');
   }
 
-  // Effect to handle Google Redirect
-  useEffect(() => {
-    if (!auth) return;
-
-    const authAction = searchParams.get('auth');
-    if (authAction === 'google') {
-      setIsGoogleLoading(true);
-      const provider = new GoogleAuthProvider();
-      signInWithRedirect(auth, provider);
-    }
-    
-    // Check for redirect result on page load
-    const checkRedirect = async () => {
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                setIsGoogleLoading(true);
-                handleSuccessfulSignup(result);
-            }
-        } catch (error: any) {
-             toast({
-                variant: 'destructive',
-                title: 'Signup Failed',
-                description: error.message || 'An unknown error occurred with Google Sign-In.',
-            });
-            setIsGoogleLoading(false);
-        }
-    };
-    checkRedirect();
-
-  }, [auth, searchParams, router, toast]);
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) return;
     setIsLoading(true);
@@ -115,6 +83,24 @@ export default function SignupPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    if (!auth) return;
+    setIsGoogleLoading(true);
+    try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        handleSuccessfulSignup(result);
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Signup Failed',
+            description: error.message || 'An unknown error occurred with Google Sign-In.',
+        });
+    } finally {
+        setIsGoogleLoading(false);
     }
   }
 
@@ -134,76 +120,76 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-      <Card className="mx-auto max-w-sm w-full">
-        <CardHeader className="text-center">
-          <Link href="/" className="inline-block mb-4">
-            <Logo className="justify-center" />
-          </Link>
-          <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
-          <CardDescription>Enter your details to start planning your next adventure</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
-                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign Up
-              </Button>
-            </form>
-          </Form>
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-          <Button asChild variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}>
-            <Link href="/signup?auth=google" target="_blank">
-                {isGoogleLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                <GoogleIcon className="mr-2 h-4 w-4" />
-                )}
-                Google
+    <ClientOnly>
+      <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
+        <Card className="mx-auto max-w-sm w-full">
+          <CardHeader className="text-center">
+            <Link href="/" className="inline-block mb-4">
+              <Logo className="justify-center" />
             </Link>
-          </Button>
-          <div className="mt-4 text-center text-sm">
-            Already have an account?{' '}
-            <Link href="/login" className="underline text-primary">
-              Sign in
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            <CardTitle className="text-2xl font-headline">Create an Account</CardTitle>
+            <CardDescription>Enter your details to start planning your next adventure</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="you@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="••••••••" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign Up
+                </Button>
+              </form>
+            </Form>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+            <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}>
+                  {isGoogleLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                  <GoogleIcon className="mr-2 h-4 w-4" />
+                  )}
+                  Google
+            </Button>
+            <div className="mt-4 text-center text-sm">
+              Already have an account?{' '}
+              <Link href="/login" className="underline text-primary">
+                Sign in
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </ClientOnly>
   );
 }
