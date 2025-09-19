@@ -51,6 +51,14 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const auth = useMemo(() => (isFirebaseConfigured() ? getFirebaseAuth() : null), []);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
   
   const handleSuccessfulLogin = (credential: UserCredential | null) => {
     if (!credential) return;
