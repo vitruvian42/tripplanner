@@ -63,7 +63,7 @@ export default function SignupPage() {
     if (!credential) return;
     toast({
       title: 'Account Created',
-      description: "Welcome to Wanderplan! You're being redirected to your dashboard.",
+              description: "Welcome to Trippy! You're being redirected to your dashboard.",
     });
     router.replace('/dashboard');
   }

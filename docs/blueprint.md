@@ -1,4 +1,4 @@
-# **App Name**: Wanderplan
+# **App Name**: Trippy
 
 ## Core Features:
 

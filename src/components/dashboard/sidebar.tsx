@@ -13,7 +13,7 @@ export default function DashboardSidebar() {
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'My Trips' },
     { href: '/discover', icon: Map, label: 'Discover' },
-    { href: '/collaborate', icon: Users, label: 'Shared With Me' },
+    { href: '/shared-trips', icon: Users, label: 'Shared With Me' },
     { href: '/settings', icon: Settings, label: 'Settings' },
   ];
 

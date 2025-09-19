@@ -24,7 +24,10 @@ type TripPageProps = {
   };
 };
 
-export default async function TripPage({ params: { tripId } }: TripPageProps) {
+export default async function TripPage({ params }: TripPageProps) {
+  // Despite what the types might say, the Next.js runtime requires `params` to be awaited.
+  const awaitedParams = await params;
+  const tripId = awaitedParams.tripId;
   let trip = await getTripById(tripId);
 
   if (!trip) {

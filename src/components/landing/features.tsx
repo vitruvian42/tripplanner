@@ -31,8 +31,8 @@ export function LandingFeatures() {
           <div className="space-y-2">
             <h2 className="text-3xl font-bold font-headline tracking-tighter sm:text-4xl">Plan Less, Experience More</h2>
             <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Wanderplan combines powerful AI with intuitive tools to make travel planning simple, collaborative, and fun.
-            </p>
+            Trippy combines powerful AI with intuitive tools to make travel planning simple, collaborative, and fun.
+          </p>
           </div>
         </div>
         <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">

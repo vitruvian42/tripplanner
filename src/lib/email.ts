@@ -1,6 +1,10 @@
 
+import { Resend } from 'resend';
 import type { Trip } from './types';
 import { placeholderImageById, defaultPlaceholderImage } from './placeholder-images';
+
+// NOTE: This assumes you have set RESEND_API_KEY in your .env.local file
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface EmailRecipient {
   name: string;
@@ -14,9 +18,7 @@ interface TripInviteEmailParams extends EmailRecipient {
 }
 
 /**
- * Generates an HTML welcome email for new users.
- * In a real app, this would use an email service (e.g., SendGrid, Resend) to send the email.
- * For now, it logs the HTML content to the console.
+ * Generates and sends a welcome email to new users using Resend.
  */
 export async function sendWelcomeEmail({ name, email }: WelcomeEmailParams) {
   const subject = "You're Invited to Plan Your Next Adventure with Trippy!";
@@ -60,21 +62,25 @@ export async function sendWelcomeEmail({ name, email }: WelcomeEmailParams) {
     </html>
   `;
 
-  console.log('--- SENDING WELCOME EMAIL ---');
-  console.log(`To: ${email}`);
-  console.log(`Subject: ${subject}`);
-  // console.log(html); // Uncomment to see the full HTML in logs
-  console.log('----------------------------');
-  
-  // In a real app, you would replace the console logs with your email service call:
-  // await resend.emails.send({ from: 'onboarding@trippy.com', to: email, subject, html });
+  try {
+    await resend.emails.send({
+      // NOTE: You must use a verified domain with Resend for the 'from' address.
+      // For testing, you can use the default 'onboarding@resend.dev'
+      from: 'Trippy <onboarding@resend.dev>',
+      to: email,
+      subject,
+      html,
+    });
+    console.log(`Welcome email sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+    // Optionally re-throw or handle the error as needed
+  }
 }
 
 
 /**
- * Generates an HTML trip invitation email.
- * In a real app, this would use an email service to send the email.
- * For now, it logs the HTML content to the console.
+ * Generates and sends a trip invitation email using Resend.
  */
 export async function sendTripInviteEmail({ name, email, trip }: TripInviteEmailParams) {
   const subject = `You're invited to plan a trip to ${trip.destination}!`;
@@ -115,12 +121,18 @@ export async function sendTripInviteEmail({ name, email, trip }: TripInviteEmail
     </html>
   `;
   
-  console.log('--- SENDING TRIP INVITE EMAIL ---');
-  console.log(`To: ${email}`);
-  console.log(`Subject: ${subject}`);
-  // console.log(html); // Uncomment to see the full HTML in logs
-  console.log('-------------------------------');
-
-  // In a real app, you would replace the console logs with your email service call:
-  // await resend.emails.send({ from: 'invites@trippy.com', to: email, subject, html });
+  try {
+    await resend.emails.send({
+      // NOTE: You must use a verified domain with Resend for the 'from' address.
+      // For testing, you can use the default 'onboarding@resend.dev'
+      from: 'Trippy <onboarding@resend.dev>',
+      to: email,
+      subject,
+      html,
+    });
+    console.log(`Trip invite email sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending trip invite email:', error);
+    // Optionally re-throw or handle the error as needed
+  }
 }

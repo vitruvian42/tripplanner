@@ -8,7 +8,7 @@ export function LandingHeader() {
       <div className="container mx-auto max-w-7xl flex items-center justify-between">
         <Link href="#" className="flex items-center justify-center" prefetch={false}>
           <Logo className="text-white"/>
-          <span className="sr-only">Wanderplan</span>
+          <span className="sr-only">Trippy</span>
         </Link>
         <nav className="flex gap-4 sm:gap-6">
           <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">

@@ -6,10 +6,8 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Trip } from '@/lib/types';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Loader2 } from 'lucide-react';
-import { CreateTripDialog } from '@/components/dashboard/create-trip-dialog';
+import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
@@ -44,23 +42,19 @@ const TripCard = ({ trip }: { trip: Trip }) => {
     );
 };
 
-const EmptyState = ({ title, description, openDialog }: { title: string, description: string, openDialog: () => void }) => (
+const EmptyState = () => (
     <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4 py-12">
         <div className="flex flex-col items-center gap-1 text-center">
-            <h3 className="text-2xl font-bold tracking-tight">{title}</h3>
-            <p className="text-sm text-muted-foreground">{description}</p>
-            <Button className="mt-4" onClick={openDialog}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Create Trip
-            </Button>
+            <h3 className="text-2xl font-bold tracking-tight">No trips have been shared with you</h3>
+            <p className="text-sm text-muted-foreground">When someone shares a trip, it will appear here.</p>
         </div>
     </div>
 );
 
-export default function DashboardPage() {
+export default function SharedTripsPage() {
   const { user } = useAuth();
-  const [myTrips, setMyTrips] = useState<Trip[]>([]);
+  const [sharedTrips, setSharedTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const db = getFirebaseDb();
 
   useEffect(() => {
@@ -70,15 +64,19 @@ export default function DashboardPage() {
     }
 
     setLoading(true);
-    // Query for trips where the user is the owner
-    const q = query(collection(db, 'trips'), where('ownerId', '==', user.uid));
+    // Query for trips where the user is a collaborator but NOT the owner
+    const q = query(
+      collection(db, 'trips'),
+      where('collaborators', 'array-contains', user.uid),
+      where('ownerId', '!=', user.uid) // Filter out trips owned by the current user
+    );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const trips: Trip[] = [];
       querySnapshot.forEach((doc) => {
         trips.push({ id: doc.id, ...doc.data() } as Trip);
       });
-      setMyTrips(trips);
+      setSharedTrips(trips);
       setLoading(false);
     }, (error) => {
       console.error("Snapshot error:", error);
@@ -91,32 +89,20 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-1 flex-col">
         <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl font-headline">My Trips</h1>
-            <div className="ml-auto flex items-center gap-2">
-                <Button size="sm" className="h-8 gap-1" onClick={() => setIsDialogOpen(true)}>
-                    <PlusCircle className="h-3.5 w-3.5" />
-                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Create Trip</span>
-                </Button>
-            </div>
+            <h1 className="text-lg font-semibold md:text-2xl font-headline">Shared with Me</h1>
         </div>
         
         {loading ? (
             <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm mt-4">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-        ) : myTrips.length > 0 ? (
+        ) : sharedTrips.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-4">
-                {myTrips.map((trip) => <TripCard key={trip.id} trip={trip} />)}
+                {sharedTrips.map((trip) => <TripCard key={trip.id} trip={trip} />)}
             </div>
         ) : (
-            <EmptyState 
-                title="You have no trips yet"
-                description="Start planning your next adventure by creating a new trip."
-                openDialog={() => setIsDialogOpen(true)}
-            />
+            <EmptyState />
         )}
-
-        <CreateTripDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
     </div>
   );
 }
