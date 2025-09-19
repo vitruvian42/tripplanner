@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -38,26 +38,31 @@ export function AddExpenseDialog({ isOpen, onOpenChange, tripId, collaborators }
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
+  const defaultFormValues = {
+    description: '',
+    amount: undefined,
+    currency: 'INR',
+    paidBy: user?.uid,
+    splitBetween: collaborators.map(c => c.uid),
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      description: '',
-      currency: 'INR',
-      paidBy: user?.uid,
-      splitBetween: collaborators.map(c => c.uid), // Default to splitting with everyone
-    },
+    defaultValues: defaultFormValues,
   });
 
-  // Reset form when dialog opens/closes or collaborators change
-  useState(() => {
-    form.reset({
-      description: '',
-      amount: undefined,
-      currency: 'INR',
-      paidBy: user?.uid,
-      splitBetween: collaborators.map(c => c.uid),
-    });
-  });
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        description: '',
+        amount: undefined,
+        currency: 'INR',
+        paidBy: user?.uid,
+        splitBetween: collaborators.map(c => c.uid),
+      });
+    }
+  }, [isOpen, form, user, collaborators]);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -94,7 +99,6 @@ export function AddExpenseDialog({ isOpen, onOpenChange, tripId, collaborators }
     if (result.success) {
       toast({ title: 'Expense Added', description: 'Your expense has been logged.' });
       onOpenChange(false);
-      form.reset();
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to add expense.' });
     }
@@ -127,7 +131,7 @@ export function AddExpenseDialog({ isOpen, onOpenChange, tripId, collaborators }
                 render={({ field }) => (
                   <FormItem className="col-span-2">
                     <FormLabel>Amount</FormLabel>
-                    <FormControl><Input type="number" step="0.01" placeholder="1000.00" {...field} /></FormControl>
+                    <FormControl><Input type="number" step="0.01" placeholder="1000.00" {...field} value={field.value ?? ''} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
