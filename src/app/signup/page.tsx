@@ -75,11 +75,19 @@ export default function SignupPage() {
       const credential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       handleSuccessfulSignup(credential);
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Signup Failed',
-        description: error.message || 'An unknown error occurred. Please try again.',
-      });
+      if (error.code === 'auth/operation-not-allowed') {
+        toast({
+            variant: 'destructive',
+            title: 'Signup Method Disabled',
+            description: 'Email/Password sign-up is not enabled. Please enable it in your Firebase project settings.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Signup Failed',
+          description: error.message || 'An unknown error occurred. Please try again.',
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -92,11 +100,19 @@ export default function SignupPage() {
         const provider = new GoogleAuthProvider();
         await signInWithRedirect(auth, provider);
     } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Signup Failed',
-            description: error.message || 'An unknown error occurred with Google Sign-In.',
-        });
+        if (error.code === 'auth/operation-not-allowed') {
+            toast({
+                variant: 'destructive',
+                title: 'Signup Method Disabled',
+                description: 'Google Sign-In is not enabled. Please enable it in your Firebase project settings.',
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Signup Failed',
+                description: error.message || 'An unknown error occurred with Google Sign-In.',
+            });
+        }
         setIsLoading(false);
     }
   }
