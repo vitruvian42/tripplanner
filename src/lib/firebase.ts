@@ -12,41 +12,34 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp | undefined;
-let auth: Auth | undefined;
-let db: Firestore | undefined;
+// Check if all required environment variables are present
+const isFirebaseConfigured =
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId;
 
-function initializeFirebase() {
-  if (
-    !app &&
-    firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId
-  ) {
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app: FirebaseApp | undefined;
+if (isFirebaseConfigured && !getApps().length) {
+  try {
+    app = initializeApp(firebaseConfig);
+  } catch (e) {
+    console.error("Failed to initialize Firebase", e);
   }
+} else if (isFirebaseConfigured) {
+  app = getApp();
 }
 
-// Export functions to get the instances, which will initialize on first call
+const auth: Auth | undefined = app ? getAuth(app) : undefined;
+const db: Firestore | undefined = app ? getFirestore(app) : undefined;
+
 export function getFirebaseApp() {
-  if (!app) {
-    initializeFirebase();
-  }
   return app;
 }
 
 export function getFirebaseAuth() {
-  const firebaseApp = getFirebaseApp();
-  if (firebaseApp && !auth) {
-    auth = getAuth(firebaseApp);
-  }
   return auth;
 }
 
 export function getFirebaseDb() {
-  const firebaseApp = getFirebaseApp();
-  if (firebaseApp && !db) {
-    db = getFirestore(firebaseApp);
-  }
   return db;
 }
