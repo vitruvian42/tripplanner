@@ -12,8 +12,6 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-console.log(firebaseConfig)
-
 // This function checks if the client-side Firebase config is complete.
 function isFirebaseConfigured(): boolean {
   return (
@@ -24,51 +22,28 @@ function isFirebaseConfigured(): boolean {
   );
 }
 
-// Singleton instances for client-side services
-let app: FirebaseApp;
-let auth: Auth | null = null;
-let db: Firestore | null = null;
-
 /**
- * Initializes the Firebase app on the client side if it hasn't been already.
- * This function is designed to be called safely multiple times.
- */
-function initializeClientApp() {
-  if (!isFirebaseConfigured()) {
-    console.warn(
-      'Firebase client configuration is missing or incomplete. Client-side Firebase services will be unavailable. Check your NEXT_PUBLIC_FIREBASE_* environment variables.'
-    );
-    return;
-  }
-
-  if (!getApps().length) {
-    try {
-      app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      db = getFirestore(app);
-      console.log('Firebase Client SDK initialized successfully.');
-    } catch (error) {
-       console.error('Firebase Client SDK initialization error:', error);
-    }
-  } else {
-    app = getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-  }
-}
-
-// Initialize on first module load
-initializeClientApp();
-
-/**
- * Gets the initialized Firebase App instance.
- * @throws {Error} if Firebase is not configured or failed to initialize.
+ * Gets the initialized Firebase App instance, initializing it if needed.
+ * This "get-or-create" pattern prevents race conditions and duplicate initializations.
+ * @throws {Error} if Firebase is not configured.
  */
 export function getFirebaseApp(): FirebaseApp {
-  if (!app) {
-    throw new Error('Firebase has not been initialized. Check your environment variables and console for errors.');
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase configuration is missing. Check your NEXT_PUBLIC_FIREBASE_* environment variables.');
   }
-  return app;
+
+  if (getApps().length > 0) {
+    return getApp();
+  }
+  
+  try {
+    const app = initializeApp(firebaseConfig);
+    console.log('Firebase Client SDK initialized successfully.');
+    return app;
+  } catch (error) {
+     console.error('Firebase Client SDK initialization error:', error);
+     throw new Error('Firebase initialization failed. See console for details.');
+  }
 }
 
 /**
@@ -77,10 +52,8 @@ export function getFirebaseApp(): FirebaseApp {
  * @throws {Error} if Firebase is not configured or failed to initialize.
  */
 export function getFirebaseAuth(): Auth {
-  if (!auth) {
-    throw new Error('Firebase Auth has not been initialized. Check your environment variables and console for errors.');
-  }
-  return auth;
+  const app = getFirebaseApp();
+  return getAuth(app);
 }
 
 /**
@@ -89,10 +62,8 @@ export function getFirebaseAuth(): Auth {
  * @throws {Error} if Firebase is not configured or failed to initialize.
  */
 export function getFirebaseDb(): Firestore {
-  if (!db) {
-    throw new Error('Firestore has not been initialized. Check your environment variables and console for errors.');
-  }
-  return db;
+  const app = getFirebaseApp();
+  return getFirestore(app);
 }
 
 // Export the configuration status check as well
