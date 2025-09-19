@@ -12,54 +12,63 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+function isFirebaseConfigured(): boolean {
+    return !!(
+      firebaseConfig.apiKey &&
+      firebaseConfig.authDomain &&
+      firebaseConfig.projectId
+    );
+}
+
 // Singleton instances
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
 function initializeFirebase() {
-  if (!getApps().length) {
-    if (
-      !firebaseConfig.apiKey ||
-      !firebaseConfig.authDomain ||
-      !firebaseConfig.projectId
-    ) {
-      throw new Error('Firebase configuration is missing in environment variables.');
+    if (!isFirebaseConfigured()) {
+        throw new Error('Firebase configuration is missing in environment variables.');
     }
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApp();
-  }
-  auth = getAuth(app);
-  db = getFirestore(app);
+    if (!getApps().length) {
+        app = initializeApp(firebaseConfig);
+    } else {
+        app = getApp();
+    }
+    auth = getAuth(app);
+    db = getFirestore(app);
 }
 
 // Initialize on load
-if (typeof window !== 'undefined') {
+try {
     initializeFirebase();
+} catch (error) {
+    console.error("Firebase initialization failed:", (error as Error).message);
+    // Don't throw here, let components handle the uninitialized state.
 }
 
 
 export function getFirebaseApp(): FirebaseApp {
-  if (!app) initializeFirebase();
+  if (!app) {
+      // This will throw if config is missing.
+      initializeFirebase();
+  }
   return app;
 }
 
 export function getFirebaseAuth(): Auth {
-  if (!auth) initializeFirebase();
+  if (!auth) {
+      // This will throw if config is missing.
+      initializeFirebase();
+  }
   return auth;
 }
 
 export function getFirebaseDb(): Firestore {
-  if (!db) initializeFirebase();
+  if (!db) {
+      // This will throw if config is missing.
+      initializeFirebase();
+  }
   return db;
 }
 
-export function isFirebaseConfigured(): boolean {
-  // This check is now more for server-side or build-time verification if needed
-  return !!(
-    firebaseConfig.apiKey &&
-    firebaseConfig.authDomain &&
-    firebaseConfig.projectId
-  );
-}
+export { isFirebaseConfigured };

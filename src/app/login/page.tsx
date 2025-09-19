@@ -51,18 +51,22 @@ export default function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [auth, setAuth] = useState<Auth | null>(null);
 
+  const firebaseReady = useMemo(() => isFirebaseConfigured(), []);
+
   useEffect(() => {
-    try {
-      setAuth(getFirebaseAuth());
-    } catch (e) {
-      console.error(e);
-      toast({
-        variant: 'destructive',
-        title: 'Configuration Error',
-        description: 'Firebase is not configured correctly. Please check your environment variables.'
-      })
+    if (firebaseReady) {
+      try {
+        setAuth(getFirebaseAuth());
+      } catch (e) {
+        console.error(e);
+        toast({
+          variant: 'destructive',
+          title: 'Configuration Error',
+          description: 'Firebase is not configured correctly. Please check your environment variables.'
+        })
+      }
     }
-  }, [toast]);
+  }, [toast, firebaseReady]);
   
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -128,7 +132,7 @@ export default function LoginPage() {
     await signInWithRedirect(auth, provider);
   }
 
-  if (!auth) {
+  if (!firebaseReady) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
             <Card className="mx-auto max-w-sm w-full">

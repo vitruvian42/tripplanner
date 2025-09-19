@@ -18,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
 
 // Helper function to save user data to Firestore
 const saveUserToFirestore = async (user: User) => {
+  if (!isFirebaseConfigured()) return;
   try {
     const db = getFirebaseDb();
     const userRef = doc(db, "users", user.uid);
@@ -40,6 +41,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isFirebaseConfigured()) {
+      console.error("Firebase not configured. Auth will not be initialized.");
+      setLoading(false);
+      return;
+    }
+    
     let auth;
     try {
       auth = getFirebaseAuth();
