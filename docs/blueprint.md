@@ -8,6 +8,12 @@
 - Collaborative Trip Planning: Enable multiple users to share and co-plan trips with features like shared document vault and chat.
 - Expense Management: Manage trip expenses with automated tracking as bookings occur, shared across all trip users.
 - AI-Powered Personal Trip Assistant: Sends timely reminders and helps optimize trip time with activity recommendations, based on live data.
+- Real-Time Notifications: Notify users of important updates such as flight changes, weather alerts, and local events.
+- Photo Sharing: allow users to share photos from their trips in a shared album.
+- Offline Access: Provide offline access to itineraries and important trip information.
+- Booking Integration: Allow users to book flights, accommodations, and activities directly through the app.
+- Map Integration: Integrate with mapping services to provide directions and location-based recommendations.
+
 
 ## Style Guidelines:
 

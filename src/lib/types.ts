@@ -11,6 +11,17 @@ export interface Collaborator {
   photoURL?: string | null;
 }
 
+export interface TripPhoto {
+  id: string;
+  url: string;
+  uploadedBy: {
+    uid: string;
+    name: string;
+    photoURL?: string | null;
+  };
+  uploadedAt: string; // ISO string
+}
+
 export interface Location {
   lat: number;
   lng: number;
@@ -82,6 +93,7 @@ export interface Trip {
   imageId?: string;
   enrichedItinerary?: EnrichedItinerary; 
   expenses?: Expense[];
+  photos?: TripPhoto[];
 }
 
 export interface FirestoreTrip extends Omit<Trip, 'id' | 'createdAt'> {

@@ -1,5 +1,3 @@
-
-
 import { getTripById } from '@/lib/firestore';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -14,12 +12,13 @@ import { FindHotelCard } from '@/components/trip/find-hotel-card';
 import { HotelDisplayCard } from '@/components/trip/hotel-display-card'; // Import HotelDisplayCard
 import { ImageWithFallback } from '@/components/ui/image-with-fallback'; // Import ImageWithFallback
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Hotel, Map as MapIcon, Bot, Wallet, Share2 } from 'lucide-react';
+import { FileText, Hotel, Map as MapIcon, Bot, Wallet, Share2, Camera } from 'lucide-react';
 import { ExpenseTracker } from '@/components/trip/expense-tracker';
 import { Button } from '@/components/ui/button';
 import { ShareTripDialog } from '@/components/trip/share-trip-dialog';
 import { DeleteTripButton } from '@/components/trip/delete-trip-button';
-import { EnrichedItinerary } from '@/lib/types';
+import { EnrichedItinerary, TripPhoto } from '@/lib/types';
+import { PhotoUploadSection } from '@/components/trip/photo-upload-section';
 
 
 type TripPageProps = {
@@ -153,12 +152,13 @@ export default async function TripPage({ params }: TripPageProps) {
           </div>
           
           <Tabs defaultValue="itinerary" className="mt-8">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="itinerary"><FileText className="mr-2"/>Itinerary</TabsTrigger>
               <TabsTrigger value="expenses"><Wallet className="mr-2"/>Expenses</TabsTrigger>
               <TabsTrigger value="hotel"><Hotel className="mr-2"/>Hotel</TabsTrigger>
               <TabsTrigger value="assistant"><Bot className="mr-2"/>AI Assistant</TabsTrigger>
               <TabsTrigger value="map"><MapIcon className="mr-2"/>Map</TabsTrigger>
+              <TabsTrigger value="photos"><Camera className="mr-2"/>Photos</TabsTrigger>
             </TabsList>
             <TabsContent value="itinerary" className="mt-6">
                <h2 className="text-3xl font-bold font-headline mb-6">Your Itinerary</h2>
@@ -187,6 +187,10 @@ export default async function TripPage({ params }: TripPageProps) {
              <TabsContent value="map" className="mt-6">
                <h2 className="text-3xl font-bold font-headline mb-6">Map</h2>
                <TripMap destination={trip.destination} itinerary={trip.enrichedItinerary ?? undefined} />
+            </TabsContent>
+            <TabsContent value="photos" className="mt-6">
+              <h2 className="text-3xl font-bold font-headline mb-6">Trip Photos</h2>
+              <PhotoUploadSection tripId={trip.id} initialPhotos={trip.photos || []} />
             </TabsContent>
           </Tabs>
 
