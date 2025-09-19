@@ -1,7 +1,7 @@
 
-import { doc, getDoc, updateDoc, PartialWithFieldValue, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, PartialWithFieldValue, collection, query, where, getDocs, setDoc, type Timestamp } from 'firebase/firestore';
 import { getFirebaseDb, getFirebaseAuth } from './firebase';
-import type { Trip, Collaborator } from './types';
+import type { Trip, FirestoreTrip, Collaborator } from './types';
 import { getAuth } from 'firebase/auth';
 
 export async function getTripById(tripId: string): Promise<Trip | null> {
@@ -12,9 +12,15 @@ export async function getTripById(tripId: string): Promise<Trip | null> {
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
-    // We cast here, assuming the data matches the Trip structure.
-    // The enrichedItinerary might be missing from older documents.
-    return { id: docSnap.id, ...docSnap.data() } as Trip;
+    const data = docSnap.data() as FirestoreTrip;
+    
+    // Convert Firestore Timestamp to a serializable string (ISO 8601)
+    const trip: Trip = {
+        id: docSnap.id,
+        ...data,
+        createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+    };
+    return trip;
   } else {
     return null;
   }

@@ -59,8 +59,12 @@ export interface Trip {
   itinerary: string; // The raw AI-generated text
   ownerId: string;
   collaborators: string[]; // Array of user UIDs
-  createdAt: Timestamp;
+  createdAt: string; // ISO string
   imageId?: string;
   enrichedItinerary?: EnrichedItinerary; 
   expenses?: Expense[];
+}
+
+export interface FirestoreTrip extends Omit<Trip, 'id' | 'createdAt'> {
+    createdAt: Timestamp;
 }
