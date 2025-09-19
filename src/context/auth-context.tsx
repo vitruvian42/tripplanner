@@ -18,11 +18,9 @@ const AuthContext = createContext<AuthContextType>({
 
 // Helper function to save user data to Firestore
 const saveUserToFirestore = async (user: User) => {
-  const db = getFirebaseDb();
-  if (!db) return; // Don't run if firebase is not configured
-
-  const userRef = doc(db, "users", user.uid);
   try {
+    const db = getFirebaseDb();
+    const userRef = doc(db, "users", user.uid);
     // Using setDoc with merge: true will create the document if it doesn't exist,
     // and update it if it does, without overwriting other fields.
     await setDoc(userRef, {
@@ -42,11 +40,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-        // If firebase is not configured, we are not in a logged in state.
-        setLoading(false);
-        return;
+    let auth;
+    try {
+      auth = getFirebaseAuth();
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {

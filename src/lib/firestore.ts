@@ -2,11 +2,9 @@
 import { doc, getDoc, updateDoc, PartialWithFieldValue, collection, query, where, getDocs, setDoc, type Timestamp } from 'firebase/firestore';
 import { getFirebaseDb, getFirebaseAuth } from './firebase';
 import type { Trip, FirestoreTrip, Collaborator } from './types';
-import { getAuth } from 'firebase/auth';
 
 export async function getTripById(tripId: string): Promise<Trip | null> {
   const db = getFirebaseDb();
-  if (!db) return null;
 
   const docRef = doc(db, 'trips', tripId);
   const docSnap = await getDoc(docRef);
@@ -28,7 +26,6 @@ export async function getTripById(tripId: string): Promise<Trip | null> {
 
 export async function updateTrip(tripId: string, data: PartialWithFieldValue<Trip>): Promise<void> {
   const db = getFirebaseDb();
-  if (!db) return;
 
   const docRef = doc(db, 'trips', tripId);
   await updateDoc(docRef, data);
@@ -36,7 +33,7 @@ export async function updateTrip(tripId: string, data: PartialWithFieldValue<Tri
 
 export async function getCollaboratorDetails(uids: string[]): Promise<Collaborator[]> {
   const db = getFirebaseDb();
-  if (!db || !uids || uids.length === 0) return [];
+  if (!uids || uids.length === 0) return [];
   
   const usersRef = collection(db, 'users');
   const q = query(usersRef, where('uid', 'in', uids));
@@ -60,7 +57,6 @@ export async function getCollaboratorDetails(uids: string[]): Promise<Collaborat
 
 export async function saveUserToFirestore(user: import('firebase/auth').User) {
     const db = getFirebaseDb();
-    if (!db) return;
 
     const userRef = doc(db, 'users', user.uid);
     // Use setDoc with merge to create or update the user document.
