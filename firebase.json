@@ -1,4 +1,9 @@
+
 {
+  "functions": {
+    "source": ".",
+    "runtime": "nodejs20"
+  },
   "hosting": {
     "source": ".",
     "ignore": [
@@ -6,8 +11,11 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "frameworksBackend": {
-      "region": "us-central1"
-    }
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "server"
+      }
+    ]
   }
 }
