@@ -16,21 +16,24 @@ const firebaseConfig = {
 // Initialize Firebase
 let app;
 if (!getApps().length) {
-  try {
-    if (!firebaseConfig.apiKey) {
-        throw new Error('Missing Firebase API Key. Please set NEXT_PUBLIC_FIREBASE_API_KEY in your .env file');
-    }
+  if (
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId
+  ) {
     app = initializeApp(firebaseConfig);
-  } catch (e) {
-    console.error("Firebase initialization error", e);
-    throw new Error("Failed to initialize Firebase. Check your environment variables.");
+  } else {
+    console.warn(
+      'Firebase config is missing. Please set up your .env.local file.'
+    );
   }
 } else {
   app = getApp();
 }
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+const auth = app ? getAuth(app) : undefined;
+const db = app ? getFirestore(app) : undefined;
 
 
 export { app, auth, db };
+
