@@ -93,6 +93,9 @@ export default function LoginPage() {
     try {
         const provider = new GoogleAuthProvider();
         await signInWithRedirect(auth, provider);
+        // The user will be redirected to the Google sign-in page.
+        // After sign-in, they will be redirected back here.
+        // The onAuthStateChanged listener in AuthProvider will handle the user state.
     } catch (error: any) {
         toast({
             variant: 'destructive',
