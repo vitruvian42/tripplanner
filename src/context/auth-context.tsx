@@ -40,13 +40,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isFirebaseConfigured()) {
-        console.error("Firebase is not configured, Auth will not be initialized.");
-        setLoading(false);
-        return;
+    let auth;
+    try {
+      auth = getFirebaseAuth();
+    } catch(e) {
+      console.error("Firebase not configured. Auth will not be initialized.");
+      setLoading(false);
+      return;
     }
 
-    const auth = getFirebaseAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (user) {

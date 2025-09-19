@@ -12,34 +12,51 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Singleton instances
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-function getFirebaseApp(): FirebaseApp {
+function initializeFirebase() {
   if (!getApps().length) {
+    if (
+      !firebaseConfig.apiKey ||
+      !firebaseConfig.authDomain ||
+      !firebaseConfig.projectId
+    ) {
+      throw new Error('Firebase configuration is missing in environment variables.');
+    }
     app = initializeApp(firebaseConfig);
   } else {
     app = getApp();
   }
+  auth = getAuth(app);
+  db = getFirestore(app);
+}
+
+// Initialize on load
+if (typeof window !== 'undefined') {
+    initializeFirebase();
+}
+
+
+export function getFirebaseApp(): FirebaseApp {
+  if (!app) initializeFirebase();
   return app;
 }
 
 export function getFirebaseAuth(): Auth {
-  if (!auth) {
-    auth = getAuth(getFirebaseApp());
-  }
+  if (!auth) initializeFirebase();
   return auth;
 }
 
 export function getFirebaseDb(): Firestore {
-  if (!db) {
-    db = getFirestore(getFirebaseApp());
-  }
+  if (!db) initializeFirebase();
   return db;
 }
 
 export function isFirebaseConfigured(): boolean {
+  // This check is now more for server-side or build-time verification if needed
   return !!(
     firebaseConfig.apiKey &&
     firebaseConfig.authDomain &&
