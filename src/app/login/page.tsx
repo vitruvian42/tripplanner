@@ -76,7 +76,7 @@ export default function LoginPage() {
         title: 'Login Successful',
         description: "Welcome back! You're being redirected to your dashboard.",
     });
-    router.push('/dashboard');
+    router.replace('/dashboard');
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {

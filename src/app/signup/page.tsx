@@ -75,7 +75,7 @@ export default function SignupPage() {
       title: 'Account Created',
       description: "Welcome to Trippy! You're being redirected to your dashboard.",
     });
-    router.push('/dashboard');
+    router.replace('/dashboard');
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
