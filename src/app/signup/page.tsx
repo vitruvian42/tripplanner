@@ -15,8 +15,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
-import { useState, useMemo } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Loader2, ArrowUpRight } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -51,6 +51,15 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const auth = useMemo(() => (isFirebaseConfigured() ? getFirebaseAuth() : null), []);
+  const [inIframe, setInIframe] = useState(true);
+
+  useEffect(() => {
+    try {
+      setInIframe(window.self !== window.top);
+    } catch (e) {
+      setInIframe(true);
+    }
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -131,56 +140,72 @@ export default function SignupPage() {
             <CardDescription>Enter your details to start planning your next adventure</CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="you@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="••••••••" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign Up
+            {inIframe ? (
+              <div className="space-y-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    To sign up with Google or to ensure the best experience, please open the sign-up page in a new tab.
+                  </p>
+                  <Button asChild className="w-full">
+                    <Link href="/signup" target="_blank" rel="noopener noreferrer">
+                        Open Sign-Up Page in New Tab
+                        <ArrowUpRight className="ml-2 h-4 w-4"/>
+                    </Link>
+                  </Button>
+              </div>
+            ) : (
+              <>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="you@example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="••••••••" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sign Up
+                    </Button>
+                  </form>
+                </Form>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                  </div>
+                </div>
+                <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}>
+                      {isGoogleLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                      <GoogleIcon className="mr-2 h-4 w-4" />
+                      )}
+                      Google
                 </Button>
-              </form>
-            </Form>
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-            <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}>
-                  {isGoogleLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                  <GoogleIcon className="mr-2 h-4 w-4" />
-                  )}
-                  Google
-            </Button>
+              </>
+            )}
             <div className="mt-4 text-center text-sm">
               Already have an account?{' '}
               <Link href="/login" className="underline text-primary">
