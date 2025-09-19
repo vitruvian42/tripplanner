@@ -2,11 +2,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, type Auth, type UserCredential } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, getRedirectResult, type Auth, type UserCredential } from 'firebase/auth';
 import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -46,6 +46,7 @@ const formSchema = z.object({
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -58,14 +59,48 @@ export default function LoginPage() {
       password: '',
     },
   });
-
-  const handleSuccessfulLogin = (credential: UserCredential) => {
+  
+  const handleSuccessfulLogin = (credential: UserCredential | null) => {
+    if (!credential) return;
     toast({
         title: 'Login Successful',
         description: "Welcome back! You're being redirected to your dashboard.",
     });
     router.push('/dashboard');
   }
+
+  // Effect to handle Google Redirect
+  useEffect(() => {
+    if (!auth) return;
+
+    const authAction = searchParams.get('auth');
+    if (authAction === 'google') {
+      setIsGoogleLoading(true);
+      const provider = new GoogleAuthProvider();
+      signInWithRedirect(auth, provider);
+    }
+    
+    // Check for redirect result on page load
+    const checkRedirect = async () => {
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                setIsGoogleLoading(true);
+                handleSuccessfulLogin(result);
+            }
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: error.message || 'An unknown error occurred with Google Sign-In.',
+            });
+            setIsGoogleLoading(false);
+        }
+    };
+    checkRedirect();
+
+  }, [auth, searchParams, router, toast]);
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) return;
@@ -81,24 +116,6 @@ export default function LoginPage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    if (!auth) return;
-    setIsGoogleLoading(true);
-    try {
-        const provider = new GoogleAuthProvider();
-        const credential = await signInWithPopup(auth, provider);
-        handleSuccessfulLogin(credential);
-    } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: error.message || 'An unknown error occurred with Google Sign-In.',
-        });
-    } finally {
-        setIsGoogleLoading(false);
     }
   }
 
@@ -170,13 +187,15 @@ export default function LoginPage() {
               <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-            {isGoogleLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <GoogleIcon className="mr-2 h-4 w-4" />
-            )}
-            Google
+          <Button asChild variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}>
+            <Link href="/login?auth=google" target="_blank">
+                {isGoogleLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                )}
+                Google
+            </Link>
           </Button>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
