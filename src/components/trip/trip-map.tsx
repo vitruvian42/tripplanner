@@ -17,25 +17,9 @@ export function TripMap({ destination, itinerary }: TripMapProps) {
   let mapSrc: string;
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
-  const waypoints = itinerary?.days
-    .flatMap(day => day.activities)
-    .map(activity => activity.title)
-    .filter(title => {
-      const lowerTitle = title.toLowerCase();
-      return !genericTerms.some(term => lowerTitle.includes(term));
-    })
-    .map(title => `${title}, ${destination}`)
-    .join('|');
-
-  if (waypoints) {
-    const origin = encodeURIComponent(destination);
-    const destinationArg = encodeURIComponent(destination); // Route ends at the start
-    // Use Google Maps Directions API embed
-    mapSrc = `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${origin}&destination=${destinationArg}&waypoints=${encodeURIComponent(waypoints)}`;
-  } else {
-    // Default map if there's no itinerary or waypoints
-    mapSrc = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(destination)}&key=${apiKey}`;
-  }
+  // Reverting to a simpler 'place' map to avoid API authorization issues.
+  // The Directions API requires additional permissions and billing to be enabled.
+  mapSrc = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(destination)}&key=${apiKey}`;
   
   // Note: For the Directions API to work, the "Maps Embed API" and "Directions API"
   // must be enabled in the Google Cloud Console for the project associated with this API key.
@@ -44,8 +28,8 @@ export function TripMap({ destination, itinerary }: TripMapProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Trip Route</CardTitle>
-        <CardDescription>A map showing the planned route for your trip to {destination}.</CardDescription>
+        <CardTitle>Trip Location</CardTitle>
+        <CardDescription>A map showing the location of your trip to {destination}.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="w-full h-96 bg-muted rounded-lg overflow-hidden">
