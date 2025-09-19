@@ -12,28 +12,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const isFirebaseConfigured =
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.projectId;
-
-if (!isFirebaseConfigured && typeof window !== 'undefined') {
-  console.error("Firebase is not configured. Please check your NEXT_PUBLIC_ environment variables.");
-}
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
 function getFirebaseApp(): FirebaseApp {
-  if (!isFirebaseConfigured) {
-    throw new Error("Firebase is not configured. Please check your NEXT_PUBLIC_ environment variables.");
-  }
   if (!getApps().length) {
-    return initializeApp(firebaseConfig);
+    app = initializeApp(firebaseConfig);
   } else {
-    return getApp();
+    app = getApp();
   }
+  return app;
 }
-
-let auth: Auth | null = null;
-let db: Firestore | null = null;
 
 export function getFirebaseAuth(): Auth {
   if (!auth) {
@@ -47,4 +37,12 @@ export function getFirebaseDb(): Firestore {
     db = getFirestore(getFirebaseApp());
   }
   return db;
+}
+
+export function isFirebaseConfigured(): boolean {
+  return !!(
+    firebaseConfig.apiKey &&
+    firebaseConfig.authDomain &&
+    firebaseConfig.projectId
+  );
 }
