@@ -13,11 +13,7 @@ const firebaseConfig = {
 };
 
 function isFirebaseConfigured(): boolean {
-    return !!(
-      firebaseConfig.apiKey &&
-      firebaseConfig.authDomain &&
-      firebaseConfig.projectId
-    );
+    return !!firebaseConfig.projectId;
 }
 
 // Singleton instances
@@ -27,47 +23,30 @@ let db: Firestore;
 
 function initializeFirebase() {
     if (!isFirebaseConfigured()) {
-        throw new Error('Firebase configuration is missing in environment variables.');
+        console.warn('Firebase client configuration is missing. Client-side Firebase services will be unavailable.');
+        return;
     }
-    if (!getApps().length) {
-        app = initializeApp(firebaseConfig);
-    } else {
-        app = getApp();
-    }
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
 }
 
-// Initialize on load
-try {
-    initializeFirebase();
-} catch (error) {
-    console.error("Firebase initialization failed:", (error as Error).message);
-    // Don't throw here, let components handle the uninitialized state.
-}
+// Initialize on first load
+initializeFirebase();
 
-
+// Getter functions to be used throughout the app
 export function getFirebaseApp(): FirebaseApp {
-  if (!app) {
-      // This will throw if config is missing.
-      initializeFirebase();
-  }
+  if (!app) throw new Error('Firebase has not been initialized. Check your environment variables.');
   return app;
 }
 
 export function getFirebaseAuth(): Auth {
-  if (!auth) {
-      // This will throw if config is missing.
-      initializeFirebase();
-  }
+  if (!auth) throw new Error('Firebase Auth has not been initialized. Check your environment variables.');
   return auth;
 }
 
 export function getFirebaseDb(): Firestore {
-  if (!db) {
-      // This will throw if config is missing.
-      initializeFirebase();
-  }
+  if (!db) throw new Error('Firestore has not been initialized. Check your environment variables.');
   return db;
 }
 
