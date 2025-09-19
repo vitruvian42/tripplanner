@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, type Auth } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, type Auth, type UserCredential } from 'firebase/auth';
 import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -49,24 +49,7 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [auth, setAuth] = useState<Auth | null>(null);
-
-  const firebaseReady = useMemo(() => isFirebaseConfigured(), []);
-
-  useEffect(() => {
-    if (firebaseReady) {
-      try {
-        setAuth(getFirebaseAuth());
-      } catch (e) {
-        console.error(e);
-        toast({
-          variant: 'destructive',
-          title: 'Configuration Error',
-          description: 'Firebase is not configured correctly. Please check your environment variables.'
-        })
-      }
-    }
-  }, [toast, firebaseReady]);
+  const auth = useMemo(() => isFirebaseConfigured() ? getFirebaseAuth() : null, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,16 +59,20 @@ export default function SignupPage() {
     },
   });
 
+  const handleSuccessfulSignup = (credential: UserCredential) => {
+    toast({
+      title: 'Account Created',
+      description: "Welcome to Trippy! You're being redirected to your dashboard.",
+    });
+    router.push('/dashboard');
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) return;
     setIsLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
-      toast({
-        title: 'Account Created',
-        description: "Welcome to Trippy! You're being redirected to your dashboard.",
-      });
-      router.push('/dashboard');
+      const credential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      handleSuccessfulSignup(credential);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -100,12 +87,22 @@ export default function SignupPage() {
   async function handleGoogleSignIn() {
     if (!auth) return;
     setIsGoogleLoading(true);
-    const provider = new GoogleAuthProvider();
-    // The user will be redirected to the login page to handle the result.
-    await signInWithRedirect(auth, provider);
+    try {
+        const provider = new GoogleAuthProvider();
+        const credential = await signInWithPopup(auth, provider);
+        handleSuccessfulSignup(credential);
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Signup Failed',
+            description: error.message || 'An unknown error occurred with Google Sign-In.',
+        });
+    } finally {
+        setIsGoogleLoading(false);
+    }
   }
 
-  if (!firebaseReady) {
+  if (!isFirebaseConfigured()) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
             <Card className="mx-auto max-w-sm w-full">

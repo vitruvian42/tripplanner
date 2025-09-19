@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, getRedirectResult, type Auth } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, type Auth, type UserCredential } from 'firebase/auth';
 import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -49,25 +49,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [auth, setAuth] = useState<Auth | null>(null);
-
-  const firebaseReady = useMemo(() => isFirebaseConfigured(), []);
-
-  useEffect(() => {
-    if (firebaseReady) {
-      try {
-        setAuth(getFirebaseAuth());
-      } catch (e) {
-        console.error(e);
-        toast({
-          variant: 'destructive',
-          title: 'Configuration Error',
-          description: 'Firebase is not configured correctly. Please check your environment variables.'
-        })
-      }
-    }
-  }, [toast, firebaseReady]);
-  
+  const auth = useMemo(() => isFirebaseConfigured() ? getFirebaseAuth() : null, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,43 +59,20 @@ export default function LoginPage() {
     },
   });
 
-  useEffect(() => {
-    if (!auth) return;
-    const handleRedirectResult = async () => {
-        setIsGoogleLoading(true);
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                toast({
-                    title: 'Login Successful',
-                    description: "Welcome back! You're being redirected to your dashboard.",
-                });
-                router.push('/dashboard');
-            }
-        } catch (error: any) {
-            toast({
-                variant: 'destructive',
-                title: 'Login Failed',
-                description: error.message || 'An unknown error occurred with Google Sign-In.',
-            });
-        } finally {
-            setIsGoogleLoading(false);
-        }
-    };
-    handleRedirectResult();
-  }, [router, toast, auth]);
-
+  const handleSuccessfulLogin = (credential: UserCredential) => {
+    toast({
+        title: 'Login Successful',
+        description: "Welcome back! You're being redirected to your dashboard.",
+    });
+    router.push('/dashboard');
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) return;
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({
-        title: 'Login Successful',
-        description: "Welcome back! You're being redirected to your dashboard.",
-      });
-      router.push('/dashboard');
+      const credential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      handleSuccessfulLogin(credential);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -128,11 +87,22 @@ export default function LoginPage() {
   async function handleGoogleSignIn() {
     if (!auth) return;
     setIsGoogleLoading(true);
-    const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
+    try {
+        const provider = new GoogleAuthProvider();
+        const credential = await signInWithPopup(auth, provider);
+        handleSuccessfulLogin(credential);
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: error.message || 'An unknown error occurred with Google Sign-In.',
+        });
+    } finally {
+        setIsGoogleLoading(false);
+    }
   }
 
-  if (!firebaseReady) {
+  if (!isFirebaseConfigured()) {
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
             <Card className="mx-auto max-w-sm w-full">
