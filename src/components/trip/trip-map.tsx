@@ -1,29 +1,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { EnrichedItinerary } from '@/lib/types';
+import { Button } from '../ui/button';
+import Link from 'next/link';
+import { Map } from 'lucide-react';
 
 type TripMapProps = {
   destination: string;
   itinerary?: EnrichedItinerary;
 };
 
-// Words to filter out from activity titles to get clean waypoints
-const genericTerms = [
-  'lunch', 'dinner', 'breakfast', 'meal', 'snack', 'food', 'cuisine', 'restaurant',
-  'check-in', 'check in', 'hotel', 'accommodation', 'arrive', 'depart',
-  'explore', 'walk', 'tour', 'stroll', 'free time', 'leisure', 'relax'
-];
-
 export function TripMap({ destination, itinerary }: TripMapProps) {
-  let mapSrc: string;
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-
-  // Reverting to a simpler 'place' map to avoid API authorization issues.
-  // The Directions API requires additional permissions and billing to be enabled.
-  mapSrc = `https://www.google.com/maps/embed/v1/place?q=${encodeURIComponent(destination)}&key=${apiKey}`;
-  
-  // Note: For the Directions API to work, the "Maps Embed API" and "Directions API"
-  // must be enabled in the Google Cloud Console for the project associated with this API key.
-  // The project may also need to have billing enabled.
+  // Create a simple search link for Google Maps to avoid API key issues.
+  const mapSearchLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
 
   return (
     <Card>
@@ -32,17 +20,19 @@ export function TripMap({ destination, itinerary }: TripMapProps) {
         <CardDescription>A map showing the location of your trip to {destination}.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="w-full h-96 bg-muted rounded-lg overflow-hidden">
-          <iframe
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            loading="lazy"
-            allowFullScreen
-            referrerPolicy="no-referrer-when-downgrade"
-            src={mapSrc}
-            title={`${destination} Itinerary Map`}
-          ></iframe>
+        <div className="w-full h-96 bg-muted rounded-lg overflow-hidden flex flex-col items-center justify-center text-center p-4">
+          <p className="text-muted-foreground mb-4">
+            There was an issue loading the interactive map. This is likely due to a Google Maps API key configuration issue.
+          </p>
+          <Button asChild>
+            <Link href={mapSearchLink} target="_blank" rel="noopener noreferrer">
+              <Map className="mr-2 h-4 w-4" />
+              View on Google Maps
+            </Link>
+          </Button>
+           <p className="text-xs text-muted-foreground mt-4">
+            To enable the embedded map, please ensure the Maps Embed API is enabled and a billing account is linked to your Google Cloud project.
+          </p>
         </div>
       </CardContent>
     </Card>
