@@ -1,9 +1,13 @@
+
 // src/components/trip/trip-highlights.tsx
 'use client';
 
 import { Calendar, Tag, Users, Wallet } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { ClientOnly } from '../ui/client-only';
+import type { Collaborator } from '@/lib/types';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type TripHighlightsProps = {
   trip: {
@@ -12,7 +16,7 @@ type TripHighlightsProps = {
     endDate: string;
     budget: string;
     interests: string;
-    collaborators: string[];
+    collaborators: Collaborator[];
   };
 };
 
@@ -21,7 +25,7 @@ const HighlightItem = ({ icon, label, value }: { icon: React.ReactNode, label: s
         <div className="text-primary mt-1">{icon}</div>
         <div>
             <p className="font-semibold text-foreground">{label}</p>
-            <p className="text-muted-foreground">{value}</p>
+            <div className="text-muted-foreground">{value}</div>
         </div>
     </div>
 );
@@ -37,7 +41,7 @@ export function TripHighlights({ trip }: TripHighlightsProps) {
         <h1 className="text-4xl font-bold font-headline mb-2">{trip.destination}</h1>
         <p className="text-lg text-muted-foreground mb-6">A {duration}-day adventure</p>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 border rounded-xl">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 border rounded-xl">
              <HighlightItem 
                 icon={<Calendar className="w-6 h-6"/>}
                 label="Dates"
@@ -56,7 +60,25 @@ export function TripHighlights({ trip }: TripHighlightsProps) {
               <HighlightItem 
                 icon={<Users className="w-6 h-6"/>}
                 label="Planners"
-                value={`${trip.collaborators.length} person${trip.collaborators.length > 1 ? 's' : ''}`}
+                value={
+                  <TooltipProvider>
+                    <div className="flex items-center -space-x-2">
+                        {trip.collaborators.map(c => (
+                            <Tooltip key={c.uid}>
+                                <TooltipTrigger>
+                                     <Avatar className="w-8 h-8 border-2 border-background">
+                                        <AvatarImage src={c.photoURL || undefined} />
+                                        <AvatarFallback>{c.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{c.name}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        ))}
+                    </div>
+                  </TooltipProvider>
+                }
              />
         </div>
     </div>

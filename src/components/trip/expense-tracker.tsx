@@ -1,22 +1,21 @@
 
 'use client';
 import { useState } from 'react';
-import type { Trip } from '@/lib/types';
+import type { Trip, Collaborator } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { AddExpenseDialog } from '@/components/trip/add-expense-dialog';
 import { ExpenseList } from '@/components/trip/expense-list';
 import { ExpenseSummary } from '@/components/trip/expense-summary';
-import { useAuth } from '@/context/auth-context';
 
 
 type ExpenseTrackerProps = {
     trip: Trip;
+    collaborators: Collaborator[];
 };
 
-export function ExpenseTracker({ trip }: ExpenseTrackerProps) {
+export function ExpenseTracker({ trip, collaborators }: ExpenseTrackerProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const { user } = useAuth();
     const expenses = trip.expenses || [];
 
     return (
@@ -31,15 +30,15 @@ export function ExpenseTracker({ trip }: ExpenseTrackerProps) {
                 <ExpenseList expenses={expenses} />
             </div>
             <div>
-                 <h3 className="text-xl font-semibold font-headline mb-4">Summary</h3>
-                 <ExpenseSummary expenses={expenses} collaborators={trip.collaborators} />
+                 <h3 className="text-xl font-semibold font-headline mb-4">Balances</h3>
+                 <ExpenseSummary expenses={expenses} collaborators={collaborators} />
             </div>
-            {user && (
+            {collaborators && (
                 <AddExpenseDialog
                     isOpen={isDialogOpen}
                     onOpenChange={setIsDialogOpen}
                     tripId={trip.id}
-                    user={user}
+                    collaborators={collaborators}
                 />
             )}
         </div>

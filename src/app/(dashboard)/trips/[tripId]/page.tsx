@@ -6,14 +6,16 @@ import Image from 'next/image';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
-import { updateTrip } from '@/lib/firestore';
+import { updateTrip, getCollaboratorDetails } from '@/lib/firestore';
 import { TripHighlights } from '@/components/trip/trip-highlights';
 import { AssistantCard } from '@/components/trip/assistant-card';
 import { TripMap } from '@/components/trip/trip-map';
 import { FindHotelCard } from '@/components/trip/find-hotel-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Hotel, Map as MapIcon, Bot, Wallet } from 'lucide-react';
+import { FileText, Hotel, Map as MapIcon, Bot, Wallet, Share2 } from 'lucide-react';
 import { ExpenseTracker } from '@/components/trip/expense-tracker';
+import { Button } from '@/components/ui/button';
+import { ShareTripDialog } from '@/components/trip/share-trip-dialog';
 
 
 type TripPageProps = {
@@ -50,6 +52,8 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
     imageInfo,
     ...Object.values(placeholderImageById).filter(img => img.id !== imageInfo.id).slice(0, 4)
   ];
+
+  const collaborators = await getCollaboratorDetails(trip.collaborators);
 
   return (
     <div className="w-full">
@@ -104,14 +108,21 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
       </div>
 
       <div className="container mx-auto max-w-7xl mt-8">
-          <TripHighlights trip={{
+          <div className="flex justify-between items-start">
+             <TripHighlights trip={{
               destination: trip.destination,
               startDate: trip.startDate,
               endDate: trip.endDate,
               budget: trip.budget,
               interests: trip.interests,
-              collaborators: trip.collaborators,
+              collaborators: collaborators,
             }} />
+            <ShareTripDialog tripId={trip.id}>
+              <Button variant="outline">
+                <Share2 className="mr-2 h-4 w-4" /> Share
+              </Button>
+            </ShareTripDialog>
+          </div>
           
           <Tabs defaultValue="itinerary" className="mt-8">
             <TabsList className="grid w-full grid-cols-5">
@@ -127,7 +138,7 @@ export default async function TripPage({ params: { tripId } }: TripPageProps) {
             </TabsContent>
              <TabsContent value="expenses" className="mt-6">
                 <h2 className="text-3xl font-bold font-headline mb-6">Expense Tracker</h2>
-                <ExpenseTracker trip={trip} />
+                <ExpenseTracker trip={trip} collaborators={collaborators} />
             </TabsContent>
             <TabsContent value="hotel" className="mt-6">
               <h2 className="text-3xl font-bold font-headline mb-6">Hotel</h2>

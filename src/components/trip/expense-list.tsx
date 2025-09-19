@@ -3,6 +3,7 @@
 import type { Expense } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
+import { Users } from 'lucide-react';
 
 type ExpenseListProps = {
   expenses: Expense[];
@@ -29,8 +30,12 @@ export function ExpenseList({ expenses }: ExpenseListProps) {
             <div>
               <p className="font-semibold">{expense.description}</p>
               <p className="text-sm text-muted-foreground">
-                Paid by {expense.paidBy.displayName} on {format(new Date(expense.createdAt), 'MMM d, yyyy')}
+                Paid by {expense.paidBy.name} on {format(new Date(expense.createdAt), 'MMM d, yyyy')}
               </p>
+               <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                    <Users className="w-3 h-3" />
+                    <span>Split with {expense.split.splitBetween.length} people</span>
+               </div>
             </div>
             <div className="text-right">
               <p className="font-bold text-lg text-primary">

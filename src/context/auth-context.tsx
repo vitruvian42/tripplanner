@@ -1,8 +1,10 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -14,6 +16,22 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
 });
 
+// Helper function to save user data to Firestore
+const saveUserToFirestore = async (user: User) => {
+  const userRef = doc(db, "users", user.uid);
+  try {
+    await setDoc(userRef, {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+    }, { merge: true }); // Use merge to avoid overwriting existing fields
+  } catch (error) {
+    console.error("Error saving user to Firestore:", error);
+  }
+};
+
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +39,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (user) {
+        saveUserToFirestore(user);
+      }
       setLoading(false);
     });
 

@@ -1,12 +1,15 @@
+
 'use server';
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
-import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, where, query, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
+import type { Expense, Collaborator } from '@/lib/types';
+import { auth } from 'firebase-admin';
 
 interface CreateTripParams {
   tripData: {
@@ -72,30 +75,16 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
 
 interface AddExpenseParams {
     tripId: string;
-    expenseData: {
-        description: string;
-        amount: number;
-        currency: string;
-    };
-    user: {
-        uid: string;
-        displayName: string;
-    };
+    expenseData: Omit<Expense, 'id' | 'createdAt'>;
 }
 
-export async function addExpenseAction({ tripId, expenseData, user }: AddExpenseParams): Promise<{ success: boolean; error?: string; }> {
+export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams): Promise<{ success: boolean; error?: string; }> {
     try {
         const tripRef = doc(db, 'trips', tripId);
 
-        const newExpense = {
+        const newExpense: Expense = {
             id: randomUUID(),
-            description: expenseData.description,
-            amount: expenseData.amount,
-            currency: expenseData.currency,
-            paidBy: {
-                uid: user.uid,
-                displayName: user.displayName || 'Anonymous',
-            },
+            ...expenseData,
             createdAt: new Date().toISOString(),
         };
 
@@ -109,5 +98,37 @@ export async function addExpenseAction({ tripId, expenseData, user }: AddExpense
     } catch (error: any) {
         console.error('Error adding expense:', error);
         return { success: false, error: 'Failed to add expense.' };
+    }
+}
+
+
+interface ShareTripParams {
+    tripId: string;
+    inviteeEmail: string;
+}
+
+export async function shareTripAction({ tripId, inviteeEmail }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", inviteeEmail));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return { success: false, error: "User with that email does not exist." };
+        }
+
+        const inviteeDoc = querySnapshot.docs[0];
+        const inviteeId = inviteeDoc.id;
+
+        const tripRef = doc(db, "trips", tripId);
+        await updateDoc(tripRef, {
+            collaborators: arrayUnion(inviteeId)
+        });
+        
+        revalidatePath(`/trips/${tripId}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error sharing trip:', error);
+        return { success: false, error: "Failed to share trip." };
     }
 }
