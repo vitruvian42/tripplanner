@@ -22,29 +22,26 @@ function isFirebaseConfigured(): boolean {
   );
 }
 
-/**
- * Gets the initialized Firebase App instance, initializing it if needed.
- * This "get-or-create" pattern prevents race conditions and duplicate initializations.
- * @throws {Error} if Firebase is not configured.
- */
-export function getFirebaseApp(): FirebaseApp {
+// Singleton function to get the Firebase app instance
+const getFirebaseApp = (): FirebaseApp => {
   if (!isFirebaseConfigured()) {
     throw new Error('Firebase configuration is missing. Check your NEXT_PUBLIC_FIREBASE_* environment variables.');
   }
-
-  if (getApps().length > 0) {
+  
+  if (getApps().length === 0) {
+    console.log('Firebase Client SDK initializing...');
+    return initializeApp(firebaseConfig);
+  } else {
     return getApp();
   }
-  
-  try {
-    const app = initializeApp(firebaseConfig);
-    console.log('Firebase Client SDK initialized successfully.');
-    return app;
-  } catch (error) {
-     console.error('Firebase Client SDK initialization error:', error);
-     throw new Error('Firebase initialization failed. See console for details.');
-  }
-}
+};
+
+
+// Memoize the app, auth, and db instances at the module level
+const app: FirebaseApp | null = isFirebaseConfigured() ? getFirebaseApp() : null;
+const auth: Auth | null = app ? getAuth(app) : null;
+const db: Firestore | null = app ? getFirestore(app) : null;
+
 
 /**
  * Gets the initialized Firebase Auth instance.
@@ -52,8 +49,10 @@ export function getFirebaseApp(): FirebaseApp {
  * @throws {Error} if Firebase is not configured or failed to initialize.
  */
 export function getFirebaseAuth(): Auth {
-  const app = getFirebaseApp();
-  return getAuth(app);
+  if (!auth) {
+    throw new Error('Firebase Auth is not available. Check your configuration.');
+  }
+  return auth;
 }
 
 /**
@@ -62,8 +61,10 @@ export function getFirebaseAuth(): Auth {
  * @throws {Error} if Firebase is not configured or failed to initialize.
  */
 export function getFirebaseDb(): Firestore {
-  const app = getFirebaseApp();
-  return getFirestore(app);
+  if (!db) {
+    throw new Error('Firestore is not available. Check your configuration.');
+  }
+  return db;
 }
 
 // Export the configuration status check as well
