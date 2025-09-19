@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 
@@ -63,6 +63,8 @@ export default function LoginPage() {
   
   const handleSuccessfulLogin = (credential: UserCredential | null) => {
     if (!credential) return;
+    // The onAuthStateChanged listener in AuthProvider will handle redirection.
+    // We just show a toast message here.
     toast({
         title: 'Login Successful',
         description: "Welcome back! You're being redirected to your dashboard.",
@@ -91,18 +93,20 @@ export default function LoginPage() {
     if (!auth) return;
     setIsGoogleLoading(true);
     try {
-        const provider = new GoogleAuthProvider();
-        await signInWithRedirect(auth, provider);
-        // The user will be redirected to the Google sign-in page.
-        // After sign-in, they will be redirected back here.
-        // The onAuthStateChanged listener in AuthProvider will handle the user state.
+      const provider = new GoogleAuthProvider();
+      // Use signInWithRedirect for a full-page redirect flow.
+      // This is more robust and avoids popup blocker issues.
+      await signInWithRedirect(auth, provider);
+      // After this call, the page will redirect to Google.
+      // After successful login, Google redirects back, and onAuthStateChanged
+      // in our AuthProvider will detect the user and handle redirection to dashboard.
     } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: error.message || 'An unknown error occurred with Google Sign-In.',
-        });
-        setIsGoogleLoading(false);
+      toast({
+        variant: 'destructive',
+        title: 'Google Sign-In Failed',
+        description: error.message || 'An unknown error occurred with Google Sign-In.',
+      });
+      setIsGoogleLoading(false);
     }
   }
 
