@@ -3,8 +3,8 @@
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { enrichItinerary } from '@/ai/flows/ai-enrich-itinerary';
-import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, query, where, getDocs, writeBatch } from 'firebase/firestore';
-import { db, admin } from '@/lib/firebase-admin';
+import { addDoc, collection, serverTimestamp, doc, updateDoc, arrayUnion, query, where, getDocs, writeBatch, setDoc } from 'firebase/firestore';
+import { db, auth as adminAuth } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
@@ -24,6 +24,12 @@ interface CreateTripParams {
 
 export async function createTripAction({ tripData, userId }: CreateTripParams): Promise<{ success: boolean; tripId?: string; error?: string; }> {
   console.log('[ACTION] Starting createTripAction for user:', userId);
+
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('[ACTION] ERROR: GEMINI_API_KEY is not set.');
+    return { success: false, error: 'The AI service is not configured. Please set the GEMINI_API_KEY.' };
+  }
+
   try {
     // 1. Generate itinerary using GenAI flow
     console.log('[ACTION] Generating itinerary for:', tripData.destination);
@@ -114,7 +120,7 @@ interface ShareTripParams {
 
 export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
     try {
-        const auth = admin.auth();
+        const auth = adminAuth;
         let inviteeId: string;
         let isNewUser = false;
 
