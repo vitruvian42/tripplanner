@@ -2,20 +2,17 @@
 import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const serviceAccount = process.env.FIREBASE_ADMIN_SDK_CONFIG
-  ? JSON.parse(process.env.FIREBASE_ADMIN_SDK_CONFIG)
-  : undefined;
-
 if (!admin.apps.length) {
-    if (!serviceAccount) {
-        throw new Error('Missing Firebase Admin SDK config. Please set FIREBASE_ADMIN_SDK_CONFIG in your .env.local file');
-    }
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-  } catch (error) {
+    // When deployed to App Hosting, the Admin SDK is automatically initialized.
+    // When running locally, you must set the FIREBASE_ADMIN_SDK_CONFIG env var.
+    admin.initializeApp();
+  } catch (error: any) {
     console.log('Firebase admin initialization error', error.stack);
+    // Provide a more helpful error message for local development.
+    if (error.code === 'app/invalid-credential') {
+        throw new Error('Failed to initialize Firebase Admin SDK. For local development, ensure the FIREBASE_ADMIN_SDK_CONFIG environment variable is set correctly in your .env file.');
+    }
     throw new Error('Failed to initialize Firebase Admin SDK. Check your environment variables.');
   }
 }
