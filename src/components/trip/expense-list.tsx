@@ -34,7 +34,7 @@ export function ExpenseList({ expenses }: ExpenseListProps) {
             </div>
             <div className="text-right">
               <p className="font-bold text-lg text-primary">
-                {new Intl.NumberFormat(undefined, { style: 'currency', currency: expense.currency }).format(expense.amount)}
+                {new Intl.NumberFormat('en-IN', { style: 'currency', currency: expense.currency }).format(expense.amount)}
               </p>
             </div>
           </CardContent>

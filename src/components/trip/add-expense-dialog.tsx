@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const formSchema = z.object({
   description: z.string().min(2, { message: 'Description is required.' }),
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
-  currency: z.string().min(3, { message: 'Currency is required.'}).default('USD'),
+  currency: z.string().min(3, { message: 'Currency is required.'}).default('INR'),
 });
 
 type AddExpenseDialogProps = {
@@ -45,7 +45,7 @@ export function AddExpenseDialog({ isOpen, onOpenChange, tripId, user }: AddExpe
     defaultValues: {
       description: '',
       amount: 0,
-      currency: 'USD',
+      currency: 'INR',
     },
   });
 
@@ -108,7 +108,7 @@ export function AddExpenseDialog({ isOpen, onOpenChange, tripId, user }: AddExpe
                   <FormItem className="col-span-2">
                     <FormLabel>Amount</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" placeholder="25.00" {...field} />
+                      <Input type="number" step="0.01" placeholder="1000.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -123,10 +123,11 @@ export function AddExpenseDialog({ isOpen, onOpenChange, tripId, user }: AddExpe
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="USD" />
+                                <SelectValue placeholder="INR" />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                            <SelectItem value="INR">INR</SelectItem>
                             <SelectItem value="USD">USD</SelectItem>
                             <SelectItem value="EUR">EUR</SelectItem>
                             <SelectItem value="GBP">GBP</SelectItem>

@@ -25,7 +25,7 @@ export function ExpenseSummary({ expenses, collaborators }: ExpenseSummaryProps)
     }
 
   const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const currency = expenses.length > 0 ? expenses[0].currency : 'USD';
+  const currency = expenses.length > 0 ? expenses[0].currency : 'INR';
 
   const contributions: { [key: string]: { name: string, amount: number } } = {};
 
@@ -47,7 +47,7 @@ export function ExpenseSummary({ expenses, collaborators }: ExpenseSummaryProps)
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">Total Spent</p>
           <p className="text-3xl font-bold">
-            {new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(totalSpent)}
+            {new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(totalSpent)}
           </p>
         </div>
         <Separator />
@@ -56,7 +56,7 @@ export function ExpenseSummary({ expenses, collaborators }: ExpenseSummaryProps)
             {Object.values(contributions).sort((a,b) => b.amount - a.amount).map(c => (
                  <div key={c.name} className="flex justify-between items-center text-sm">
                     <p>{c.name}</p>
-                    <p className="font-medium">{new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(c.amount)}</p>
+                    <p className="font-medium">{new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(c.amount)}</p>
                  </div>
             ))}
         </div>
