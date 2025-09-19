@@ -22,25 +22,25 @@ function isFirebaseConfigured(): boolean {
   );
 }
 
-// Singleton function to get the Firebase app instance
-const getFirebaseApp = (): FirebaseApp => {
+// Memoize instances at the module level but initialize them lazily.
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+
+function initializeFirebase() {
   if (!isFirebaseConfigured()) {
-    throw new Error('Firebase configuration is missing. Check your NEXT_PUBLIC_FIREBASE_* environment variables.');
+    console.warn('Firebase configuration is missing. Services will not be available.');
+    return;
   }
-  
   if (getApps().length === 0) {
     console.log('Firebase Client SDK initializing...');
-    return initializeApp(firebaseConfig);
+    app = initializeApp(firebaseConfig);
   } else {
-    return getApp();
+    app = getApp();
   }
-};
-
-
-// Memoize the app, auth, and db instances at the module level
-const app: FirebaseApp | null = isFirebaseConfigured() ? getFirebaseApp() : null;
-const auth: Auth | null = app ? getAuth(app) : null;
-const db: Firestore | null = app ? getFirestore(app) : null;
+  auth = getAuth(app);
+  db = getFirestore(app);
+}
 
 
 /**
@@ -49,6 +49,9 @@ const db: Firestore | null = app ? getFirestore(app) : null;
  * @throws {Error} if Firebase is not configured or failed to initialize.
  */
 export function getFirebaseAuth(): Auth {
+  if (!auth) {
+    initializeFirebase();
+  }
   if (!auth) {
     throw new Error('Firebase Auth is not available. Check your configuration.');
   }
@@ -61,6 +64,9 @@ export function getFirebaseAuth(): Auth {
  * @throws {Error} if Firebase is not configured or failed to initialize.
  */
 export function getFirebaseDb(): Firestore {
+  if (!db) {
+    initializeFirebase();
+  }
   if (!db) {
     throw new Error('Firestore is not available. Check your configuration.');
   }
