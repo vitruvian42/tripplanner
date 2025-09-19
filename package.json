@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "gcp-build": "next build"
+    "gcp-build": "npm run build"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",
@@ -64,6 +64,5 @@
     "tailwindcss": "^3.4.1",
     "tsx": "^4.16.2",
     "typescript": "^5"
-  },
-  "main": ".next/server/index.js"
+  }
 }
