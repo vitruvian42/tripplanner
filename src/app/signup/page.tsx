@@ -49,7 +49,6 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const auth = useMemo(() => (isFirebaseConfigured() ? getFirebaseAuth() : null), []);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -88,7 +87,6 @@ export default function SignupPage() {
 
   async function handleGoogleSignIn() {
     if (!auth) return;
-    setIsGoogleLoading(true);
     try {
         const provider = new GoogleAuthProvider();
         await signInWithRedirect(auth, provider);
@@ -98,7 +96,6 @@ export default function SignupPage() {
             title: 'Signup Failed',
             description: error.message || 'An unknown error occurred with Google Sign-In.',
         });
-        setIsGoogleLoading(false);
     }
   }
 
@@ -157,7 +154,7 @@ export default function SignupPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign Up
                 </Button>
@@ -171,13 +168,9 @@ export default function SignupPage() {
                 <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
-            <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" disabled={isLoading || isGoogleLoading}>
-                  {isGoogleLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                  <GoogleIcon className="mr-2 h-4 w-4" />
-                  )}
-                  Google
+            <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" disabled={isLoading}>
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                Google
             </Button>
             <div className="mt-4 text-center text-sm">
               Already have an account?{' '}
