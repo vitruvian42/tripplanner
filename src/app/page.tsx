@@ -1,16 +1,12 @@
+
 'use client';
 
 import { LandingHeader } from '@/components/landing/header';
 import { LandingHero } from '@/components/landing/hero';
 import { LandingFeatures } from '@/components/landing/features';
-import { useEffect, useState } from 'react';
+import { ClientOnly } from '@/components/ui/client-only';
 
 export default function Home() {
-  const [year, setYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -21,7 +17,7 @@ export default function Home() {
       </main>
       <footer className="bg-muted/50">
         <div className="container mx-auto max-w-7xl px-4 md:px-6 py-6 text-center text-sm text-muted-foreground">
-          © {year || new Date().getFullYear()} Trippy. All rights reserved.
+          <ClientOnly>© {new Date().getFullYear()} Trippy. All rights reserved.</ClientOnly>
         </div>
       </footer>
     </div>

@@ -39,7 +39,9 @@ export function TripHighlights({ trip }: TripHighlightsProps) {
   return (
     <div>
         <h1 className="text-4xl font-bold font-headline mb-2">{trip.destination}</h1>
-        <p className="text-lg text-muted-foreground mb-6">A {duration}-day adventure</p>
+        <p className="text-lg text-muted-foreground mb-6">
+          <ClientOnly>A {duration}-day adventure</ClientOnly>
+        </p>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 border rounded-xl">
              <HighlightItem 
