@@ -20,12 +20,14 @@ const AuthContext = createContext<AuthContextType>({
 const saveUserToFirestore = async (user: User) => {
   const userRef = doc(db, "users", user.uid);
   try {
+    // Using setDoc with merge: true will create the document if it doesn't exist,
+    // and update it if it does, without overwriting other fields.
     await setDoc(userRef, {
       uid: user.uid,
       email: user.email,
-      displayName: user.displayName,
+      displayName: user.displayName || user.email?.split('@')[0], // Provide a fallback display name
       photoURL: user.photoURL,
-    }, { merge: true }); // Use merge to avoid overwriting existing fields
+    }, { merge: true });
   } catch (error) {
     console.error("Error saving user to Firestore:", error);
   }
@@ -40,6 +42,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (user) {
+        // This will now run for new sign-ups and subsequent logins,
+        // ensuring the user document always exists.
         saveUserToFirestore(user);
       }
       setLoading(false);
