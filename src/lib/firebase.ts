@@ -12,42 +12,86 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// This function checks if the client-side Firebase config is complete.
 function isFirebaseConfigured(): boolean {
-    return !!firebaseConfig.projectId;
+  return (
+    !!firebaseConfig.apiKey &&
+    !!firebaseConfig.authDomain &&
+    !!firebaseConfig.projectId &&
+    !!firebaseConfig.appId
+  );
 }
 
-// Singleton instances
+// Singleton instances for client-side services
 let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
 
-function initializeFirebase() {
-    if (!isFirebaseConfigured()) {
-        console.warn('Firebase client configuration is missing. Client-side Firebase services will be unavailable.');
-        return;
+/**
+ * Initializes the Firebase app on the client side if it hasn't been already.
+ * This function is designed to be called safely multiple times.
+ */
+function initializeClientApp() {
+  if (!isFirebaseConfigured()) {
+    console.warn(
+      'Firebase client configuration is missing or incomplete. Client-side Firebase services will be unavailable. Check your NEXT_PUBLIC_FIREBASE_* environment variables.'
+    );
+    return;
+  }
+
+  if (!getApps().length) {
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      console.log('Firebase Client SDK initialized successfully.');
+    } catch (error) {
+       console.error('Firebase Client SDK initialization error:', error);
     }
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  } else {
+    app = getApp();
     auth = getAuth(app);
     db = getFirestore(app);
+  }
 }
 
-// Initialize on first load
-initializeFirebase();
+// Initialize on first module load
+initializeClientApp();
 
-// Getter functions to be used throughout the app
+/**
+ * Gets the initialized Firebase App instance.
+ * @throws {Error} if Firebase is not configured or failed to initialize.
+ */
 export function getFirebaseApp(): FirebaseApp {
-  if (!app) throw new Error('Firebase has not been initialized. Check your environment variables.');
+  if (!app) {
+    throw new Error('Firebase has not been initialized. Check your environment variables and console for errors.');
+  }
   return app;
 }
 
+/**
+ * Gets the initialized Firebase Auth instance.
+ * @returns {Auth} The Auth instance.
+ * @throws {Error} if Firebase is not configured or failed to initialize.
+ */
 export function getFirebaseAuth(): Auth {
-  if (!auth) throw new Error('Firebase Auth has not been initialized. Check your environment variables.');
+  if (!auth) {
+    throw new Error('Firebase Auth has not been initialized. Check your environment variables and console for errors.');
+  }
   return auth;
 }
 
+/**
+ * Gets the initialized Firestore instance.
+ * @returns {Firestore} The Firestore instance.
+ * @throws {Error} if Firebase is not configured or failed to initialize.
+ */
 export function getFirebaseDb(): Firestore {
-  if (!db) throw new Error('Firestore has not been initialized. Check your environment variables.');
+  if (!db) {
+    throw new Error('Firestore has not been initialized. Check your environment variables and console for errors.');
+  }
   return db;
 }
 
+// Export the configuration status check as well
 export { isFirebaseConfigured };
