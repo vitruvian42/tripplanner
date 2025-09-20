@@ -1,11 +1,14 @@
-
 {
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs20"
-  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "firebase-frameworks-absolute-realm-470109-c9",
+      "runtime": "nodejs20"
+    }
+  ],
   "hosting": {
     "source": ".",
+    "codebase": "firebase-frameworks-absolute-realm-470109-c10",
     "ignore": [
       "firebase.json",
       "**/.*",
