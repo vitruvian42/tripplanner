@@ -1,24 +1,23 @@
 {
   "functions": [
     {
-      "source": "functions",
-      "codebase": "firebase-frameworks-absolute-realm-470109-c9",
+      "source": "functions-upload",
+      "codebase": "user-upload",
       "runtime": "nodejs20"
     }
   ],
   "hosting": {
     "source": ".",
-    "codebase": "firebase-frameworks-absolute-realm-470109-c10",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
-      {
-        "source": "**",
-        "function": "server"
-      }
-    ]
+    "frameworksBackend": {
+      "region": "us-central1"
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }

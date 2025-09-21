@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from '../ui/logo';
 import { signOut } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
@@ -26,7 +26,7 @@ export default function DashboardHeader() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
-  const auth = getFirebaseAuth();
+  
 
   const handleLogout = async () => {
     if (!auth) return;

@@ -42,7 +42,7 @@ export function PhotoUploadSection({ tripId, initialPhotos }: PhotoUploadSection
             try {
               const idToken = await currentUser.getIdToken(); // Get the ID token
 
-              const response = await fetch('https://us-central1-absolute-realm-470109-c9.cloudfunctions.net/uploadTripPhoto', {
+              const response = await fetch('https://us-central1-absolute-realm-470109-c9.cloudfunctions.net/user-upload-uploadTripPhoto', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

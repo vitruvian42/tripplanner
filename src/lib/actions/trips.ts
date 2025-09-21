@@ -2,13 +2,15 @@
 'use server';
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
-import { deleteTrip } from '@/lib/firestore';
+
 
 import { revalidatePath } from 'next/cache';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
 import type { Expense, Trip } from '@/lib/types';
 import { sendTripInviteEmail, sendWelcomeEmail } from '@/lib/email';
+import { db, auth } from '@/lib/firebase-admin'; // Added this line
+import { FieldValue } from 'firebase-admin/firestore';
 
 // NOTE: We are now using the Firebase Admin SDK for all Firestore operations.
 // We no longer import from 'firebase/firestore'.
@@ -25,11 +27,7 @@ interface CreateTripParams {
 }
 
 export async function createTripAction({ tripData, userId }: CreateTripParams): Promise<{ success: boolean; tripId?: string; error?: string; }> {
-  const admin = await import('firebase-admin');
-  if (admin.apps.length === 0) {
-    admin.initializeApp();
-  }
-  const db = admin.firestore();
+  
 
   console.log('[ACTION] Starting createTripAction for user:', userId);
 
@@ -59,7 +57,7 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
       enrichedItinerary: generatedEnrichedItinerary, // Store the structured data
       ownerId: userId,
       collaborators: [userId],
-      createdAt: admin.firestore.FieldValue.serverTimestamp(), // Admin SDK syntax
+      createdAt: FieldValue.serverTimestamp(), // Admin SDK syntax
       imageId: generatedEnrichedItinerary.hotel?.imageUrl || generatedEnrichedItinerary.days[0]?.activities[0]?.imageUrl || selectedImage.id, // Use generated image or fallback
       expenses: [],
     };
@@ -88,12 +86,6 @@ interface AddExpenseParams {
 }
 
 export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams): Promise<{ success: boolean; error?: string; }> {
-    const admin = await import('firebase-admin');
-    if (admin.apps.length === 0) {
-        admin.initializeApp();
-    }
-    const db = admin.firestore();
-
     try {
         const tripRef = db.collection('trips').doc(tripId); // Admin SDK syntax
 
@@ -104,7 +96,7 @@ export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams
         };
 
         await tripRef.update({ // Admin SDK syntax
-            expenses: admin.firestore.FieldValue.arrayUnion(newExpense) // Admin SDK syntax
+            expenses: FieldValue.arrayUnion(newExpense) // Admin SDK syntax
         });
 
         revalidatePath(`/trips/${tripId}`);
@@ -117,13 +109,8 @@ export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams
 }
 
 export async function deleteTripAction(tripId: string): Promise<{ success: boolean; error?: string; }> {
-  const admin = await import('firebase-admin');
-  if (admin.apps.length === 0) {
-    admin.initializeApp();
-  }
-
   try {
-    await deleteTrip(tripId); // Call the firestore function
+    await db.collection('trips').doc(tripId).delete(); // Call the firestore function
 
     revalidatePath('/dashboard'); // Revalidate dashboard to remove the deleted trip
     revalidatePath(`/trips/${tripId}`); // Revalidate the specific trip page (will likely lead to notFound)
@@ -147,13 +134,6 @@ interface ShareTripParams {
 }
 
 export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
-    const admin = await import('firebase-admin');
-    if (admin.apps.length === 0) {
-        admin.initializeApp();
-    }
-    const db = admin.firestore();
-    const auth = admin.auth();
-
     try {
         let inviteeId: string;
         let isNewUser = false;
@@ -197,7 +177,7 @@ export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams
         // Add user to the trip's collaborators
         const tripRef = db.collection('trips').doc(tripId); // Admin SDK syntax
         await tripRef.update({ // Admin SDK syntax
-            collaborators: admin.firestore.FieldValue.arrayUnion(inviteeId) // Admin SDK syntax
+            collaborators: FieldValue.arrayUnion(inviteeId) // Admin SDK syntax
         });
         console.log(`[ACTION] Added ${inviteeId} to trip collaborators.`);
 

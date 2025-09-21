@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Trip } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -61,7 +61,7 @@ export default function DashboardPage() {
   const [myTrips, setMyTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const db = getFirebaseDb();
+  
 
   useEffect(() => {
     if (!user || !user.uid || !db) {

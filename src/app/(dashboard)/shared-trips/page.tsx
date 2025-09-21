@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Trip } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,7 +55,7 @@ export default function SharedTripsPage() {
   const { user } = useAuth();
   const [sharedTrips, setSharedTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
-  const db = getFirebaseDb();
+  
 
   useEffect(() => {
     if (!user || !user.uid || !db) {

@@ -22,56 +22,22 @@ function isFirebaseConfigured(): boolean {
   );
 }
 
-// Memoize instances at the module level but initialize them lazily.
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let db: Firestore | null = null;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
-function initializeFirebase() {
-  if (!isFirebaseConfigured()) {
-    console.warn('Firebase configuration is missing. Services will not be available.');
-    return;
-  }
-  if (getApps().length === 0) {
-    console.log('Firebase Client SDK initializing...');
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApp();
-  }
-  auth = getAuth(app);
-  db = getFirestore(app);
+if (isFirebaseConfigured()) {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+} else {
+    console.warn("Firebase configuration is missing. Client-side services will not be available.");
+    // @ts-ignore
+    app = null;
+    // @ts-ignore
+    auth = null;
+    // @ts-ignore
+    db = null;
 }
 
-
-/**
- * Gets the initialized Firebase Auth instance.
- * @returns {Auth} The Auth instance.
- * @throws {Error} if Firebase is not configured or failed to initialize.
- */
-export function getFirebaseAuth(): Auth {
-  if (!auth) {
-    initializeFirebase();
-  }
-  if (!auth) {
-    throw new Error('Firebase Auth is not available. Check your configuration.');
-  }
-  return auth;
-}
-
-/**
- * Gets the initialized Firestore instance.
- * @returns {Firestore} The Firestore instance.
- * @throws {Error} if Firebase is not configured or failed to initialize.
- */
-export function getFirebaseDb(): Firestore {
-  if (!db) {
-    initializeFirebase();
-  }
-  if (!db) {
-    throw new Error('Firestore is not available. Check your configuration.');
-  }
-  return db;
-}
-
-// Export the configuration status check as well
-export { isFirebaseConfigured };
+export { app, auth, db, isFirebaseConfigured };

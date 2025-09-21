@@ -1,10 +1,10 @@
-import { getTripById } from '@/lib/firestore';
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation'; // Import generateItinerary
-import { updateTrip, getCollaboratorDetails } from '@/lib/firestore';
+import { getTripById, updateTrip, getCollaboratorDetails } from '@/lib/firestore-admin';
 import { TripHighlights } from '@/components/trip/trip-highlights';
 import { AssistantCard } from '@/components/trip/assistant-card';
 import { TripMap } from '@/components/trip/trip-map';
