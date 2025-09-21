@@ -8,7 +8,7 @@ interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElemen
   fill?: boolean;
 }
 
-export function ImageWithFallback({ src, fallbackSrc = defaultPlaceholderImage.imageUrl, alt, fill, className, ...props }: ImageWithFallbackProps) {
+export function ImageWithFallback({ src, fallbackSrc = defaultPlaceholderImage.imageUrl, alt, fill, className, priority, ...props }: ImageWithFallbackProps) {
   const [imgSrc, setImgSrc] = useState(src);
 
   const combinedClassName = `${className || ''} ${fill ? 'object-cover absolute inset-0 h-full w-full' : ''}`.trim();

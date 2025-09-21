@@ -42,7 +42,12 @@ export function PhotoUploadSection({ tripId, initialPhotos }: PhotoUploadSection
             try {
               const idToken = await currentUser.getIdToken(); // Get the ID token
 
-              const response = await fetch('https://us-central1-absolute-realm-470109-c9.cloudfunctions.net/user-upload-uploadTripPhoto', {
+              const uploadPhotoFunctionUrl = process.env.NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL;
+              if (!uploadPhotoFunctionUrl) {
+                throw new Error("NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL is not defined.");
+              }
+
+              const response = await fetch(uploadPhotoFunctionUrl, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -75,9 +80,9 @@ export function PhotoUploadSection({ tripId, initialPhotos }: PhotoUploadSection
                 uploadedAt: new Date().toISOString(),
               };
               setUploadedPhotos((prevPhotos) => [...prevPhotos, photo]);
-            } catch (error) {
+            } catch (error: any) {
               console.error('Error uploading photo:', error);
-              alert('Failed to upload photo.');
+              alert(`Failed to upload photo: ${error.message || 'An unknown error occurred.'}`);
             }
           }
         };
