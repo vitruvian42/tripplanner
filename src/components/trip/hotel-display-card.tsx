@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Hotel, Location } from '@/lib/types';
-import Image from 'next/image';
+
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
 import { defaultPlaceholderImage } from '@/lib/placeholder-images'; // Import defaultPlaceholderImage
@@ -26,11 +26,10 @@ export function HotelDisplayCard({ hotel }: HotelDisplayCardProps) {
       <CardContent className="space-y-4">
         {hotel.imageUrl && (
           <div className="relative w-full h-48 rounded-md overflow-hidden">
-            <Image
+            <img
               src={hotel.imageUrl}
               alt={hotel.name}
-              fill
-              className="object-cover"
+              className="object-cover absolute inset-0 h-full w-full"
               onError={(e) => {
                 e.currentTarget.src = defaultPlaceholderImage.imageUrl; // Fallback to a generic placeholder
               }}

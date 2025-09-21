@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, type UserCredential } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
@@ -79,7 +79,8 @@ export default function LoginPage() {
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth) return;
+    const auth = getFirebaseAuth();
+    if (!auth) return; // This check might be redundant if getFirebaseAuth always throws on uninitialized
     setIsLoading(true);
     try {
       const credential = await signInWithEmailAndPassword(auth, values.email, values.password);
@@ -96,7 +97,8 @@ export default function LoginPage() {
   }
 
   async function handleGoogleSignIn() {
-    if (!auth) return;
+    const auth = getFirebaseAuth();
+    if (!auth) return; // This check might be redundant if getFirebaseAuth always throws on uninitialized
     setIsLoading(true);
     try {
       const provider = new GoogleAuthProvider();

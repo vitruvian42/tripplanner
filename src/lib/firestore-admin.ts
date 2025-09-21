@@ -1,9 +1,10 @@
 
-import { db } from './firebase-admin';
+import { getFirebaseAdmin } from './firebase-admin';
 import type { Trip, FirestoreTrip, Collaborator } from './types';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 export async function getTripById(tripId: string): Promise<Trip | null> {
+  const { db } = getFirebaseAdmin(); // Get db instance here
   const docRef = db.collection('trips').doc(tripId);
   const docSnap = await docRef.get();
 
@@ -23,6 +24,7 @@ export async function getTripById(tripId: string): Promise<Trip | null> {
 }
 
 export async function updateTrip(tripId: string, data: { [key: string]: any }): Promise<void> {
+  const { db } = getFirebaseAdmin(); // Get db instance here
   const docRef = db.collection('trips').doc(tripId);
   await docRef.update(data);
 }
@@ -30,6 +32,7 @@ export async function updateTrip(tripId: string, data: { [key: string]: any }): 
 export async function getCollaboratorDetails(uids: string[]): Promise<Collaborator[]> {
   if (!uids || uids.length === 0) return [];
   
+  const { db } = getFirebaseAdmin(); // Get db instance here
   const usersRef = db.collection('users');
   const q = await usersRef.where('uid', 'in', uids).get();
   

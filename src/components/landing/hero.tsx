@@ -1,9 +1,7 @@
 
-'use client';
-
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
+
 import { Search, PlayCircle } from 'lucide-react';
 import { Input } from '../ui/input';
 import { useState } from 'react';
@@ -17,13 +15,11 @@ export function LandingHero() {
     <>
       <section className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center text-center text-white isolate">
         <div className="absolute inset-0 z-10">
-          <Image
+          <img
             src="https://picsum.photos/seed/hero-main/1920/1080"
             alt="Breathtaking landscape"
-            fill
             data-ai-hint="travel landscape"
-            className="object-cover"
-            priority
+            className="object-cover absolute inset-0 h-full w-full"
           />
         </div>
         <div className="absolute inset-0 bg-black/50 z-20" />

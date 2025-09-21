@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth, db, isFirebaseConfigured } from '@/lib/firebase';
+import { getFirebaseAuth, getFirestoreDb, isFirebaseConfigured } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -20,14 +20,14 @@ const AuthContext = createContext<AuthContextType>({
 const saveUserToFirestore = async (user: User) => {
   if (!isFirebaseConfigured()) return;
   try {
-    
+    const db = getFirestoreDb();
     const userRef = doc(db, "users", user.uid);
     // Using setDoc with merge: true will create the document if it doesn't exist,
     // and update it if it does, without overwriting other fields.
     await setDoc(userRef, {
       uid: user.uid,
       email: user.email,
-      displayName: user.displayName || user.email?.split('@')[0], // Provide a fallback display name
+      displayName: user.displayName || user.email?.split('@')[0],
       photoURL: user.photoURL,
     }, { merge: true });
   } catch (error) {
@@ -47,8 +47,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     
+    const auth = getFirebaseAuth();
     
-
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       if (user) {

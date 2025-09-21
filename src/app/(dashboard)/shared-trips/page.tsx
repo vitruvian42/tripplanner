@@ -3,12 +3,12 @@
 
 import { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirestoreDb } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Trip } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
+
 import Link from 'next/link';
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 import { ClientOnly } from '@/components/ui/client-only';
@@ -20,12 +20,11 @@ const TripCard = ({ trip }: { trip: Trip }) => {
             <Link href={`/trips/${trip.id}`} className="block">
                 <CardHeader className="p-0">
                     <div className="aspect-[4/3] relative">
-                        <Image
+                        <img
                             src={imageInfo.imageUrl}
                             alt={trip.destination}
-                            fill
                             data-ai-hint={imageInfo.imageHint}
-                            className="object-cover"
+                            className="object-cover absolute inset-0 h-full w-full"
                         />
                     </div>
                 </CardHeader>
@@ -58,12 +57,13 @@ export default function SharedTripsPage() {
   
 
   useEffect(() => {
-    if (!user || !user.uid || !db) {
+    if (!user || !user.uid) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
+    const db = getFirestoreDb();
     // Query for trips where the user is a collaborator but NOT the owner
     const q = query(
       collection(db, 'trips'),
@@ -84,7 +84,7 @@ export default function SharedTripsPage() {
     });
 
     return () => unsubscribe();
-  }, [user, db]);
+  }, [user]);
 
   return (
     <div className="flex flex-1 flex-col">

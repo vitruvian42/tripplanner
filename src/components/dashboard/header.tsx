@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Logo } from '../ui/logo';
 import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
@@ -29,6 +29,7 @@ export default function DashboardHeader() {
   
 
   const handleLogout = async () => {
+    const auth = getFirebaseAuth();
     if (!auth) return;
     try {
       await signOut(auth);

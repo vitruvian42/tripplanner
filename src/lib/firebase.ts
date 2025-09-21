@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
@@ -22,22 +21,36 @@ function isFirebaseConfigured(): boolean {
   );
 }
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
+let firebaseApp: FirebaseApp | null = null;
+let firebaseAuth: Auth | null = null;
+let firestoreDb: Firestore | null = null;
 
-if (isFirebaseConfigured()) {
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-} else {
+export function initializeFirebaseClient() {
+  if (getApps().length === 0 && isFirebaseConfigured()) {
+    firebaseApp = initializeApp(firebaseConfig);
+    firebaseAuth = getAuth(firebaseApp);
+    firestoreDb = getFirestore(firebaseApp);
+  } else if (getApps().length > 0) {
+    firebaseApp = getApp();
+    firebaseAuth = getAuth(firebaseApp);
+    firestoreDb = getFirestore(firebaseApp);
+  } else {
     console.warn("Firebase configuration is missing. Client-side services will not be available.");
-    // @ts-ignore
-    app = null;
-    // @ts-ignore
-    auth = null;
-    // @ts-ignore
-    db = null;
+  }
 }
 
-export { app, auth, db, isFirebaseConfigured };
+export function getFirebaseAuth(): Auth {
+  if (!firebaseAuth) {
+    throw new Error("Firebase Auth not initialized. Call initializeFirebaseClient() first.");
+  }
+  return firebaseAuth;
+}
+
+export function getFirestoreDb(): Firestore {
+  if (!firestoreDb) {
+    throw new Error("Firestore not initialized. Call initializeFirebaseClient() first.");
+  }
+  return firestoreDb;
+}
+
+export { isFirebaseConfigured };

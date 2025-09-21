@@ -9,7 +9,7 @@ import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
 import type { Expense, Trip } from '@/lib/types';
 import { sendTripInviteEmail, sendWelcomeEmail } from '@/lib/email';
-import { db, auth } from '@/lib/firebase-admin'; // Added this line
+import { getFirebaseAdmin } from '@/lib/firebase-admin'; // Added this line
 import { FieldValue } from 'firebase-admin/firestore';
 
 // NOTE: We are now using the Firebase Admin SDK for all Firestore operations.
@@ -27,7 +27,7 @@ interface CreateTripParams {
 }
 
 export async function createTripAction({ tripData, userId }: CreateTripParams): Promise<{ success: boolean; tripId?: string; error?: string; }> {
-  
+  const { db, auth } = getFirebaseAdmin();
 
   console.log('[ACTION] Starting createTripAction for user:', userId);
 
@@ -86,6 +86,7 @@ interface AddExpenseParams {
 }
 
 export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams): Promise<{ success: boolean; error?: string; }> {
+    const { db } = getFirebaseAdmin();
     try {
         const tripRef = db.collection('trips').doc(tripId); // Admin SDK syntax
 
@@ -109,6 +110,7 @@ export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams
 }
 
 export async function deleteTripAction(tripId: string): Promise<{ success: boolean; error?: string; }> {
+  const { db } = getFirebaseAdmin();
   try {
     await db.collection('trips').doc(tripId).delete(); // Call the firestore function
 
@@ -134,6 +136,7 @@ interface ShareTripParams {
 }
 
 export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
+    const { db, auth } = getFirebaseAdmin();
     try {
         let inviteeId: string;
         let isNewUser = false;

@@ -1,6 +1,6 @@
 
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
+
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation'; // Import generateItinerary

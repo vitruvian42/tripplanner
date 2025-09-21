@@ -6,7 +6,7 @@ import type { EnrichedItinerary, EnrichedActivity } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { CircleCheck, Link as LinkIcon, Building, Utensils, Bed, Footprints, Mountain, Ship, Sun } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image'; // Add this import
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'; // Add this import
 
 type ItineraryTimelineProps = {
@@ -55,11 +55,10 @@ const ActivityCard: React.FC<{ activity: EnrichedActivity; isLast: boolean }> = 
         <h4 className="font-semibold text-lg font-headline">{activity.title}</h4>
         {activity.imageUrl && (
           <div className="relative w-full h-48 mt-3 rounded-md overflow-hidden">
-            <Image
+            <img
               src={activity.imageUrl}
               alt={activity.title}
-              fill
-              className="object-cover"
+              className="object-cover absolute inset-0 h-full w-full"
             />
           </div>
         )}
