@@ -36,6 +36,7 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
     return { success: false, error: 'The AI service is not configured. Please set the GEMINI_API_KEY in your environment variables.' };
   }
 
+  let tripPayload; // Define here to access in catch block
   try {
     // 1. Generate itinerary using GenAI flow
     console.log('[ACTION] Generating itinerary for:', tripData.destination);
@@ -51,7 +52,7 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
     
     // 3. Save trip to Firestore
     console.log('[ACTION] Attempting to save trip to Firestore...');
-    const tripPayload = {
+    tripPayload = {
       ...tripData,
       itinerary: JSON.stringify(generatedEnrichedItinerary), // Store the raw JSON string for backward compatibility if needed
       enrichedItinerary: generatedEnrichedItinerary, // Store the structured data
@@ -71,12 +72,20 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
     return { success: true, tripId: docRef.id };
   } catch (error: any) {
     console.error('!!!!!!!! [ACTION] ERROR in createTripAction !!!!!!!!!!');
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
+    if (tripPayload) {
+      // Use JSON.stringify to avoid issues with circular references or complex objects in logs
+      console.error('Failed to save the following trip payload:', JSON.stringify(tripPayload, null, 2));
+    } else {
+      console.error('Trip payload was not generated before the error.');
+    }
+    console.error('Error Code:', error.code || 'N/A');
+    console.error('Error Name:', error.name);
+    console.error('Error Message:', error.message);
+    console.error('Error Stack:', error.stack);
     console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     
-    return { success: false, error: error.message || 'An unknown error occurred during trip creation.' };
+    const errorMessage = error.code ? `[${error.code}] ${error.message}` : error.message;
+    return { success: false, error: errorMessage || 'An unknown error occurred during trip creation.' };
   }
 }
 

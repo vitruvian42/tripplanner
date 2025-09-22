@@ -64,29 +64,51 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user || !user.uid) {
-      setLoading(false);
-      return;
+        setLoading(false);
+        return;
     }
 
     setLoading(true);
     const db = getFirestoreDb();
-    // Query for trips where the user is the owner
-    const q = query(collection(db, 'trips'), where('ownerId', '==', user.uid));
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const trips: Trip[] = [];
-      querySnapshot.forEach((doc) => {
-        trips.push({ id: doc.id, ...doc.data() } as Trip);
-      });
-      setMyTrips(trips);
-      setLoading(false);
+    // Query for trips where the user is the owner
+    const ownerQuery = query(collection(db, 'trips'), where('ownerId', '==', user.uid));
+
+    // Query for trips where the user is a collaborator
+    const collaboratorQuery = query(collection(db, 'trips'), where('collaborators', 'array-contains', user.uid));
+
+    const unsubOwner = onSnapshot(ownerQuery, (ownerSnapshot) => {
+        const ownerTrips = new Map<string, Trip>();
+        ownerSnapshot.forEach((doc) => {
+            ownerTrips.set(doc.id, { id: doc.id, ...doc.data() } as Trip);
+        });
+
+        const unsubCollaborator = onSnapshot(collaboratorQuery, (collaboratorSnapshot) => {
+            const combinedTrips = new Map<string, Trip>(ownerTrips);
+            collaboratorSnapshot.forEach((doc) => {
+                if (!combinedTrips.has(doc.id)) {
+                    combinedTrips.set(doc.id, { id: doc.id, ...doc.data() } as Trip);
+                }
+            });
+
+            setMyTrips(Array.from(combinedTrips.values()));
+            setLoading(false);
+        }, (error) => {
+            console.error("Collaborator snapshot error:", error);
+            setLoading(false);
+        });
+
+        return () => unsubCollaborator();
     }, (error) => {
-      console.error("Snapshot error:", error);
-      setLoading(false);
+        console.error("Owner snapshot error:", error);
+        setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [user]);
+    return () => {
+        unsubOwner();
+        // The collaborator unsubscribe is handled inside the owner snapshot
+    };
+}, [user]);
 
   return (
     <div className="flex flex-1 flex-col">
