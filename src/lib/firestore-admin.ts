@@ -1,7 +1,13 @@
 
 import { getFirebaseAdmin } from './firebase-admin';
 import type { Trip, FirestoreTrip, Collaborator } from './types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
+import admin from 'firebase-admin';
+
+// Ensure Firebase is initialized in this module
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 
 export async function getTripById(tripId: string): Promise<Trip | null> {
   const { db } = getFirebaseAdmin(); // Get db instance here
