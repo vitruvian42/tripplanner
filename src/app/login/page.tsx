@@ -171,8 +171,7 @@ export default function LoginPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full" loading={isLoading}>
                   Sign In
                 </Button>
               </form>
@@ -185,8 +184,7 @@ export default function LoginPage() {
                 <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
               </div>
             </div>
-            <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={handleGoogleSignIn} variant="outline" className="w-full" loading={isLoading}>
                 <GoogleIcon className="mr-2 h-4 w-4" />
                 Google
             </Button>

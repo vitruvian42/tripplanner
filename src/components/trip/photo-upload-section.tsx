@@ -96,7 +96,7 @@ export function PhotoUploadSection({ tripId, initialPhotos }: PhotoUploadSection
       <input type="file" multiple accept="image/*" className="hidden" id="photo-upload" onChange={handleFileChange} />
       <label htmlFor="photo-upload" className="cursor-pointer">
         <Button asChild>
-          <span><Camera className="mr-2"/>Upload Photos</span>
+          <span><Camera className="mr-2 h-4 w-4"/>Upload Photos</span>
         </Button>
       </label>
       <p className="text-sm text-gray-500 mt-2">Drag and drop your photos here, or click to browse.</p>

@@ -13,12 +13,12 @@ export function LandingHeader() {
         <nav className="flex gap-4 sm:gap-6">
           <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
             <Link href="/login" prefetch={false}>
-              Login
+              <span>Login</span>
             </Link>
           </Button>
           <Button asChild variant="outline" className="text-white border-white bg-transparent hover:bg-white hover:text-black">
             <Link href="/signup" prefetch={false}>
-              Sign Up
+              <span>Sign Up</span>
             </Link>
           </Button>
         </nav>

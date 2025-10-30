@@ -1,25 +1,28 @@
+'use client';
 
+import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 
 import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
 import ItineraryTimeline from '@/components/trip/itinerary-timeline';
-import { generateItinerary } from '@/ai/flows/ai-itinerary-generation'; // Import generateItinerary
-import { getTripById, updateTrip, getCollaboratorDetails } from '@/lib/firestore-admin';
+import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
+import { getTripById, updateTrip, getCollaboratorDetails } from '@/lib/firestore';
 import { TripHighlights } from '@/components/trip/trip-highlights';
 import { AssistantCard } from '@/components/trip/assistant-card';
 import { TripMap } from '@/components/trip/trip-map';
 import { FindHotelCard } from '@/components/trip/find-hotel-card';
-import { HotelDisplayCard } from '@/components/trip/hotel-display-card'; // Import HotelDisplayCard
-import { ImageWithFallback } from '@/components/ui/image-with-fallback'; // Import ImageWithFallback
+import { HotelDisplayCard } from '@/components/trip/hotel-display-card';
+import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Hotel, Map as MapIcon, Bot, Wallet, Share2, Camera } from 'lucide-react';
 import { ExpenseTracker } from '@/components/trip/expense-tracker';
 import { Button } from '@/components/ui/button';
 import { ShareTripDialog } from '@/components/trip/share-trip-dialog';
 import { DeleteTripButton } from '@/components/trip/delete-trip-button';
-import { EnrichedItinerary, TripPhoto } from '@/lib/types';
+import { EnrichedItinerary, Trip, Collaborator, TripPhoto } from '@/lib/types';
 import { PhotoUploadSection } from '@/components/trip/photo-upload-section';
-
+import { Loader2 } from 'lucide-react';
+import React from 'react';
 
 type TripPageProps = {
   params: {
@@ -27,62 +30,81 @@ type TripPageProps = {
   };
 };
 
-export default async function TripPage({ params }: TripPageProps) {
-  // Despite what the types might say, the Next.js runtime requires `params` to be awaited.
-  const awaitedParams = await params;
-  const tripId = awaitedParams.tripId;
-  let trip = await getTripById(tripId);
+export default function TripPage({ params }: TripPageProps) {
+  const { tripId } = React.use(params);
+  const [trip, setTrip] = useState<Trip | null>(null);
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTripData = async () => {
+      const tripData = await getTripById(tripId);
+
+      if (!tripData) {
+        notFound();
+        return;
+      }
+
+      if (!tripData.enrichedItinerary) {
+        console.log(`[TRIP PAGE] Trip ${tripId} missing enrichedItinerary. Generating...`);
+        try {
+          const generatedOutput = await generateItinerary({
+            destination: tripData.destination,
+            startDate: tripData.startDate,
+            endDate: tripData.endDate,
+            interests: tripData.interests,
+            budget: tripData.budget,
+          });
+          tripData.enrichedItinerary = generatedOutput;
+
+          if (tripData.enrichedItinerary) {
+            await updateTrip(tripId, { enrichedItinerary: tripData.enrichedItinerary });
+            console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
+          } else {
+            console.warn(`[TRIP PAGE] Generation process did not return a valid itinerary for trip ${tripId}.`);
+          }
+        } catch (e) {
+          console.error(`[TRIP PAGE] Failed to generate enriched itinerary for trip ${tripId}`, e);
+        }
+      }
+      
+      // Clean image URLs
+      if (tripData.enrichedItinerary) {
+        if (tripData.enrichedItinerary.hotel?.imageUrl?.includes('example.com')) {
+            tripData.enrichedItinerary.hotel.imageUrl = undefined;
+        }
+        tripData.enrichedItinerary.days.forEach(day => {
+            day.activities.forEach(activity => {
+            if (activity.imageUrl?.includes('example.com')) {
+                activity.imageUrl = undefined;
+            }
+            });
+        });
+      }
+
+      setTrip(tripData);
+
+      if (tripData.collaborators) {
+        const collaboratorDetails = await getCollaboratorDetails(tripData.collaborators);
+        setCollaborators(collaboratorDetails);
+      }
+
+      setLoading(false);
+    };
+
+    fetchTripData();
+  }, [tripId]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!trip) {
-    notFound();
-  }
-
-  // If the trip doesn't have an enriched itinerary (e.g., old data),
-  // generate and save it now.
-  if (!trip.enrichedItinerary) {
-    console.log(`[TRIP PAGE] Trip ${tripId} missing enrichedItinerary. Generating...`);
-    try {
-      // Call generateItinerary directly to get the structured output
-      const generatedOutput = await generateItinerary({
-        destination: trip.destination,
-        startDate: trip.startDate,
-        endDate: trip.endDate,
-        interests: trip.interests,
-        budget: trip.budget,
-      });
-      trip.enrichedItinerary = generatedOutput;
-
-      // Update the document in Firestore so we don't have to do this again.
-      if (trip.enrichedItinerary) {
-        await updateTrip(tripId, { enrichedItinerary: trip.enrichedItinerary });
-        console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
-      } else {
-        console.warn(`[TRIP PAGE] Generation process did not return a valid itinerary for trip ${tripId}.`);
-      }
-    } catch (e) {
-      console.error(`[TRIP PAGE] Failed to generate enriched itinerary for trip ${tripId}`, e);
-      // The page will still render, but without the enriched itinerary.
-    }
-  }
-
-  // Helper function to clean image URLs
-  const cleanImageUrls = (itinerary: EnrichedItinerary) => {
-    if (itinerary.hotel?.imageUrl?.includes('example.com')) {
-      itinerary.hotel.imageUrl = undefined;
-    }
-    itinerary.days.forEach(day => {
-      day.activities.forEach(activity => {
-        if (activity.imageUrl?.includes('example.com')) {
-          activity.imageUrl = undefined;
-        }
-      });
-    });
-    return itinerary;
-  };
-
-  // Clean image URLs after enrichedItinerary is set
-  if (trip.enrichedItinerary) {
-    trip.enrichedItinerary = cleanImageUrls(trip.enrichedItinerary);
+    return null; // Or some other placeholder
   }
 
   const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
@@ -90,8 +112,6 @@ export default async function TripPage({ params }: TripPageProps) {
     imageInfo,
     ...Object.values(placeholderImageById).filter(img => img.id !== imageInfo.id).slice(0, 4)
   ];
-
-  const collaborators = await getCollaboratorDetails(trip.collaborators);
 
   return (
     <div className="w-full">
@@ -152,44 +172,102 @@ export default async function TripPage({ params }: TripPageProps) {
           </div>
           
           <Tabs defaultValue="itinerary" className="mt-8">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="itinerary"><FileText className="mr-2"/>Itinerary</TabsTrigger>
-              <TabsTrigger value="expenses"><Wallet className="mr-2"/>Expenses</TabsTrigger>
-              <TabsTrigger value="hotel"><Hotel className="mr-2"/>Hotel</TabsTrigger>
-              <TabsTrigger value="assistant"><Bot className="mr-2"/>AI Assistant</TabsTrigger>
-              <TabsTrigger value="map"><MapIcon className="mr-2"/>Map</TabsTrigger>
-              <TabsTrigger value="photos"><Camera className="mr-2"/>Photos</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1 bg-muted/50">
+              <TabsTrigger value="itinerary" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 px-2 text-xs sm:text-sm">
+                <FileText className="w-4 h-4"/>
+                <span className="hidden sm:inline">Itinerary</span>
+                <span className="sm:hidden">Plan</span>
+              </TabsTrigger>
+              <TabsTrigger value="expenses" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 px-2 text-xs sm:text-sm">
+                <Wallet className="w-4 h-4"/>
+                <span className="hidden sm:inline">Expenses</span>
+                <span className="sm:hidden">Cost</span>
+              </TabsTrigger>
+              <TabsTrigger value="hotel" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 px-2 text-xs sm:text-sm">
+                <Hotel className="w-4 h-4"/>
+                <span className="hidden sm:inline">Hotel</span>
+                <span className="sm:hidden">Stay</span>
+              </TabsTrigger>
+              <TabsTrigger value="assistant" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 px-2 text-xs sm:text-sm">
+                <Bot className="w-4 h-4"/>
+                <span className="hidden sm:inline">AI Assistant</span>
+                <span className="sm:hidden">AI</span>
+              </TabsTrigger>
+              <TabsTrigger value="map" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 px-2 text-xs sm:text-sm">
+                <MapIcon className="w-4 h-4"/>
+                <span className="hidden sm:inline">Map</span>
+                <span className="sm:hidden">Map</span>
+              </TabsTrigger>
+              <TabsTrigger value="photos" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-3 px-2 text-xs sm:text-sm">
+                <Camera className="w-4 h-4"/>
+                <span className="hidden sm:inline">Photos</span>
+                <span className="sm:hidden">Pics</span>
+              </TabsTrigger>
             </TabsList>
-            <TabsContent value="itinerary" className="mt-6">
-               <h2 className="text-3xl font-bold font-headline mb-6">Your Itinerary</h2>
+            <TabsContent value="itinerary" className="mt-6 space-y-6">
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                 <h2 className="text-2xl sm:text-3xl font-bold font-headline">Your Itinerary</h2>
+                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                   <span>{trip.enrichedItinerary?.days.length || 0} days planned</span>
+                 </div>
+               </div>
                <ItineraryTimeline itinerary={trip.enrichedItinerary ?? { days: [] }} />
             </TabsContent>
-             <TabsContent value="expenses" className="mt-6">
-                <h2 className="text-3xl font-bold font-headline mb-6">Expense Tracker</h2>
+             <TabsContent value="expenses" className="mt-6 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold font-headline">Expense Tracker</h2>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{trip.expenses?.length || 0} expenses</span>
+                  </div>
+                </div>
                 {collaborators && collaborators.length > 0 ? (
                   <ExpenseTracker trip={trip} collaborators={collaborators} />
                 ) : (
-                  <p className="text-muted-foreground">Could not load collaborator data for expenses.</p>
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Could not load collaborator data for expenses.</p>
+                  </div>
                 )}
             </TabsContent>
-            <TabsContent value="hotel" className="mt-6">
-              <h2 className="text-3xl font-bold font-headline mb-6">Hotel</h2>
+            <TabsContent value="hotel" className="mt-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl sm:text-3xl font-bold font-headline">Accommodation</h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{trip.budget} budget</span>
+                </div>
+              </div>
               {trip.enrichedItinerary?.hotel ? (
                 <HotelDisplayCard hotel={trip.enrichedItinerary.hotel} />
               ) : (
                 <FindHotelCard destination={trip.destination} budget={trip.budget} />
               )}
             </TabsContent>
-            <TabsContent value="assistant" className="mt-6">
-              <h2 className="text-3xl font-bold font-headline mb-6">AI Assistant</h2>
+            <TabsContent value="assistant" className="mt-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl sm:text-3xl font-bold font-headline">AI Assistant</h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>24/7 support</span>
+                </div>
+              </div>
                <AssistantCard tripDetails={trip.itinerary} />
             </TabsContent>
-             <TabsContent value="map" className="mt-6">
-               <h2 className="text-3xl font-bold font-headline mb-6">Map</h2>
-               <TripMap destination={trip.destination} itinerary={trip.enrichedItinerary ?? undefined} />
+             <TabsContent value="map" className="mt-6 space-y-6">
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                 <h2 className="text-2xl sm:text-3xl font-bold font-headline">Interactive Map</h2>
+                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                   <span>{trip.enrichedItinerary?.days.length || 0} locations</span>
+                 </div>
+               </div>
+               <div className="h-[400px] sm:h-[500px] lg:h-[600px]">
+                 <TripMap destination={trip.destination} itinerary={trip.enrichedItinerary ?? undefined} />
+               </div>
             </TabsContent>
-            <TabsContent value="photos" className="mt-6">
-              <h2 className="text-3xl font-bold font-headline mb-6">Trip Photos</h2>
+            <TabsContent value="photos" className="mt-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl sm:text-3xl font-bold font-headline">Trip Photos</h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{trip.photos?.length || 0} photos</span>
+                </div>
+              </div>
               <PhotoUploadSection tripId={trip.id} initialPhotos={trip.photos || []} />
             </TabsContent>
           </Tabs>
