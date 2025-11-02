@@ -49,7 +49,7 @@ const prompt = ai.definePrompt({
   name: 'personalTripAssistantPrompt',
   input: {schema: PersonalTripAssistantInputSchema},
   output: {schema: PersonalTripAssistantOutputSchema},
-  model: googleAI.model('gemini-1.5-flash'),
+  model: googleAI.model('gemini-2.5-flash'),
   prompt: `You are a personal trip assistant. Your goal is to provide timely reminders and optimize the trip time for the user.
 
   Based on the following trip details, live data, and user preferences, provide reminders and activity recommendations.

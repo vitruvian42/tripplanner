@@ -6,11 +6,14 @@ import type { EnrichedItinerary, EnrichedActivity } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { CircleCheck, Link as LinkIcon, Building, Utensils, Bed, Footprints, Mountain, Ship, Sun } from 'lucide-react';
 import Link from 'next/link';
+import { getActivityImageUrl } from '@/lib/image-service';
+import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'; // Add this import
 
 type ItineraryTimelineProps = {
   itinerary?: EnrichedItinerary;
+  destination?: string;
 };
 
 const getIconForActivity = (activityTitle: string) => {
@@ -40,7 +43,12 @@ const getIconForActivity = (activityTitle: string) => {
 };
 
 
-const ActivityCard: React.FC<{ activity: EnrichedActivity; isLast: boolean }> = ({ activity, isLast }) => {
+const ActivityCard: React.FC<{ activity: EnrichedActivity; isLast: boolean; destination?: string }> = ({ activity, isLast, destination }) => {
+  // Use real image URL with proper aspect ratio, fallback to generated URL if available
+  const activityImageUrl = activity.imageUrl && !activity.imageUrl.includes('example.com')
+    ? activity.imageUrl
+    : getActivityImageUrl(activity.title, destination);
+
   return (
     <div className="relative pl-10">
       {/* Icon and Timeline */}
@@ -53,15 +61,14 @@ const ActivityCard: React.FC<{ activity: EnrichedActivity; isLast: boolean }> = 
 
       <div className='pb-10 ml-4'>
         <h4 className="font-semibold text-lg font-headline">{activity.title}</h4>
-        {activity.imageUrl && (
-          <div className="relative w-full h-48 mt-3 rounded-md overflow-hidden">
-            <img
-              src={activity.imageUrl}
-              alt={activity.title}
-              className="object-cover absolute inset-0 h-full w-full"
-            />
-          </div>
-        )}
+        <div className="relative w-full h-64 mt-3 rounded-md overflow-hidden">
+          <ImageWithFallback
+            src={activityImageUrl}
+            alt={activity.title}
+            fill
+            className="object-cover"
+          />
+        </div>
         <p className="text-sm text-muted-foreground mt-3">{activity.description}</p>
         {activity.link && (
             <Link href={activity.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-primary hover:underline mt-3 font-medium">
@@ -116,7 +123,7 @@ const ActivityCard: React.FC<{ activity: EnrichedActivity; isLast: boolean }> = 
 };
 
 
-const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary }) => {
+const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary, destination }) => {
   if (!itinerary || !itinerary.days || itinerary.days.length === 0) {
     return (
       <Card>
@@ -135,7 +142,12 @@ const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary }) => {
            <h3 className="font-headline text-2xl font-bold mb-4">Day {day.day}: {day.title}</h3>
             <div className="space-y-2">
               {day.activities.map((activity, actIndex) => (
-                <ActivityCard key={actIndex} activity={activity} isLast={actIndex === day.activities.length - 1} />
+                <ActivityCard 
+                  key={actIndex} 
+                  activity={activity} 
+                  isLast={actIndex === day.activities.length - 1} 
+                  destination={destination}
+                />
               ))}
             </div>
         </div>

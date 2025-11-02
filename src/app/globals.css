@@ -212,3 +212,82 @@
     @apply min-h-[44px] min-w-[44px];
   }
 }
+
+@layer utilities {
+  /* Print styles to hide sidebar and header when printing/downloading PDF */
+  @media print {
+    /* Hide sidebar - very specific selectors */
+    aside,
+    [data-sidebar],
+    .hidden.border-r.bg-card,
+    div[class*="hidden"][class*="border-r"],
+    div:has(> .hidden.border-r) {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    
+    /* Hide header */
+    header,
+    [data-header],
+    header.sticky,
+    header.sticky.top-0 {
+      display: none !important;
+      visibility: hidden !important;
+    }
+    
+    /* Hide navigation in header */
+    nav {
+      display: none !important;
+    }
+    
+    /* Hide elements with no-print class */
+    .no-print {
+      display: none !important;
+    }
+    
+    /* Make main content full width */
+    main {
+      margin: 0 !important;
+      padding: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+    
+    /* Adjust grid layout for print - make it single column */
+    div[class*="grid-cols"],
+    [class*="grid-cols"] {
+      display: block !important;
+      grid-template-columns: 1fr !important;
+    }
+    
+    /* Target flex containers that become grids on medium screens */
+    /* Use attribute selector to safely match Tailwind responsive classes */
+    [class*="flex"][class*="flex-col"][class*="md"] {
+      display: block !important;
+    }
+    
+    /* Remove background for print */
+    body {
+      background: white !important;
+    }
+    
+    /* Keep voucher content visible */
+    .container {
+      max-width: 100% !important;
+      padding: 1rem !important;
+    }
+    
+    /* Break pages appropriately */
+    .break-after {
+      page-break-after: always;
+    }
+    
+    .break-before {
+      page-break-before: always;
+    }
+    
+    .no-break {
+      page-break-inside: avoid;
+    }
+  }
+}

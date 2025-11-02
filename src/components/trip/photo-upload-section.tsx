@@ -42,9 +42,13 @@ export function PhotoUploadSection({ tripId, initialPhotos }: PhotoUploadSection
             try {
               const idToken = await currentUser.getIdToken(); // Get the ID token
 
-              const uploadPhotoFunctionUrl = process.env.NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL;
+              // Use environment variable or construct URL from Firebase config
+              const uploadPhotoFunctionUrl = 
+                process.env.NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL ||
+                `https://us-central1-${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.cloudfunctions.net/uploadPhoto`;
+              
               if (!uploadPhotoFunctionUrl) {
-                throw new Error("NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL is not defined.");
+                throw new Error("Unable to determine upload photo function URL. Please set NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL or NEXT_PUBLIC_FIREBASE_PROJECT_ID.");
               }
 
               const response = await fetch(uploadPhotoFunctionUrl, {

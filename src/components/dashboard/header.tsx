@@ -82,8 +82,8 @@ export default function DashboardHeader() {
           </SheetContent>
         </Sheet>
 
-        {/* Logo - hidden on mobile */}
-        <Link href="/dashboard" className="hidden md:flex items-center gap-2 font-semibold mr-6">
+        {/* Logo - only show on mobile (desktop has sidebar logo) */}
+        <Link href="/dashboard" className="flex md:hidden items-center gap-2 font-semibold mr-6">
           <Logo />
         </Link>
 
@@ -110,13 +110,24 @@ export default function DashboardHeader() {
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-4 w-4" />
-            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs">
-              3
-            </Badge>
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative h-10 w-10">
+                <Bell className="h-5 w-5" />
+                <Badge variant="destructive" className="absolute top-0 right-0 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-semibold">
+                  3
+                </Badge>
+                <span className="sr-only">Notifications</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-80" align="end" forceMount>
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                <p>No new notifications</p>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* User menu */}
           <DropdownMenu>

@@ -11,12 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PlusCircle, Loader2, Calendar, MapPin, Users, DollarSign, Sparkles } from 'lucide-react';
 import { CreateTripDialog } from '@/components/dashboard/create-trip-dialog';
 import Link from 'next/link';
-import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
+import { placeholderImageById, defaultPlaceholderImage, getRelevantPlaceholderImage } from '@/lib/placeholder-images';
+import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import { ClientOnly } from '@/components/ui/client-only';
 import { Badge } from '@/components/ui/badge';
 
 const TripCard = ({ trip }: { trip: Trip }) => {
-    const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
+    // Use real high-definition image for the destination
+    const imageInfo = getRelevantPlaceholderImage(trip.destination);
     const startDate = new Date(trip.startDate);
     const endDate = new Date(trip.endDate);
     const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -26,11 +28,12 @@ const TripCard = ({ trip }: { trip: Trip }) => {
             <Link href={`/trips/${trip.id}`} className="block">
                 <CardHeader className="p-0">
                     <div className="aspect-[4/3] relative overflow-hidden">
-                        <img
+                        <ImageWithFallback
                             src={imageInfo.imageUrl}
                             alt={trip.destination}
                             data-ai-hint={imageInfo.imageHint}
-                            className="object-cover absolute inset-0 h-full w-full group-hover:scale-105 transition-transform duration-500"
+                            fill
+                            className="group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                         <div className="absolute top-3 right-3">
@@ -152,23 +155,92 @@ export default function DashboardPage() {
       return;
     }
 
+    console.log('[DASHBOARD] Setting up queries for user:', user.uid);
+    console.log('[DASHBOARD] User email:', user.email);
     setLoading(true);
     const db = getFirestoreDb();
-    const q = query(collection(db, 'trips'), where('ownerId', '==', user.uid));
+    
+    // Query trips where user is the owner
+    const ownerQuery = query(collection(db, 'trips'), where('ownerId', '==', user.uid));
+    console.log('[DASHBOARD] Querying trips with ownerId ==', user.uid);
+    
+    // Query trips where user is a collaborator
+    const collaboratorQuery = query(collection(db, 'trips'), where('collaborators', 'array-contains', user.uid));
+    console.log('[DASHBOARD] Querying trips with collaborators array-contains', user.uid);
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const trips: Trip[] = [];
-      querySnapshot.forEach((doc) => {
-        trips.push({ id: doc.id, ...doc.data() } as Trip);
+    const allTripsMap = new Map<string, Trip>();
+
+    const processSnapshot = (querySnapshot: any, source: string) => {
+      console.log(`[DASHBOARD] Received ${querySnapshot.size} documents from ${source} query`);
+      querySnapshot.forEach((doc: any) => {
+        const data = doc.data();
+        console.log(`[DASHBOARD] Document ${doc.id}:`, {
+          ownerId: data.ownerId,
+          ownerIdType: typeof data.ownerId,
+          collaborators: data.collaborators,
+          collaboratorsType: Array.isArray(data.collaborators) ? 'array' : typeof data.collaborators,
+          userQuerying: user.uid,
+          userQueryingType: typeof user.uid,
+          ownerMatches: data.ownerId === user.uid,
+          isCollaborator: data.collaborators && Array.isArray(data.collaborators) && data.collaborators.includes(user.uid),
+        });
+        
+        // Verify user has access (defensive check)
+        if (data.ownerId === user.uid || (data.collaborators && Array.isArray(data.collaborators) && data.collaborators.includes(user.uid))) {
+          const trip = { id: doc.id, ...data } as Trip;
+          allTripsMap.set(doc.id, trip);
+          console.log(`[DASHBOARD] ✅ Added trip ${doc.id} to results`);
+        } else {
+          console.log(`[DASHBOARD] ❌ Skipped trip ${doc.id} - user doesn't have access`);
+        }
       });
-      setMyTrips(trips);
+      // Update state with combined results (deduplicated by trip ID)
+      const tripsArray = Array.from(allTripsMap.values());
+      console.log(`[DASHBOARD] Total unique trips after combining: ${tripsArray.length}`);
+      setMyTrips(tripsArray);
       setLoading(false);
-    }, (error) => {
-      console.error("Snapshot error:", error);
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    const unsubscribeOwner = onSnapshot(ownerQuery, 
+      (querySnapshot) => processSnapshot(querySnapshot, 'owner'),
+      (error) => {
+        console.error("[DASHBOARD] ❌ Owner trips snapshot error:", error);
+        console.error("[DASHBOARD] Error code:", error.code);
+        console.error("[DASHBOARD] Error message:", error.message);
+        console.error("[DASHBOARD] User making query - UID:", user.uid, "Type:", typeof user.uid);
+        console.error("[DASHBOARD] User making query - Email:", user.email);
+        if (error.code === 'permission-denied') {
+          console.error("[DASHBOARD] ⚠️ PERMISSION DENIED for owner query");
+          console.error("[DASHBOARD] User UID:", user.uid);
+          console.error("[DASHBOARD] Query was: where('ownerId', '==', user.uid)");
+          console.error("[DASHBOARD] Check Firestore rules allow reading trips where user is owner");
+        }
+        setLoading(false);
+      }
+    );
+
+    const unsubscribeCollaborator = onSnapshot(collaboratorQuery,
+      (querySnapshot) => processSnapshot(querySnapshot, 'collaborator'),
+      (error) => {
+        console.error("[DASHBOARD] ❌ Collaborator trips snapshot error:", error);
+        console.error("[DASHBOARD] Error code:", error.code);
+        console.error("[DASHBOARD] Error message:", error.message);
+        console.error("[DASHBOARD] User making query - UID:", user.uid, "Type:", typeof user.uid);
+        console.error("[DASHBOARD] User making query - Email:", user.email);
+        if (error.code === 'permission-denied') {
+          console.error("[DASHBOARD] ⚠️ PERMISSION DENIED for collaborator query");
+          console.error("[DASHBOARD] User UID:", user.uid);
+          console.error("[DASHBOARD] Query was: where('collaborators', 'array-contains', user.uid)");
+          console.error("[DASHBOARD] Check Firestore rules allow reading trips where user is collaborator");
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribeOwner();
+      unsubscribeCollaborator();
+    };
   }, [user]);
 
   const totalDays = myTrips.reduce((acc, trip) => {
