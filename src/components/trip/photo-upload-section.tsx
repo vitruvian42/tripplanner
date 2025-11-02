@@ -42,9 +42,13 @@ export function PhotoUploadSection({ tripId, initialPhotos }: PhotoUploadSection
             try {
               const idToken = await currentUser.getIdToken(); // Get the ID token
 
-              const uploadPhotoFunctionUrl = process.env.NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL;
+              // Use environment variable or construct URL from Firebase config
+              const uploadPhotoFunctionUrl = 
+                process.env.NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL ||
+                `https://us-central1-${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.cloudfunctions.net/uploadPhoto`;
+              
               if (!uploadPhotoFunctionUrl) {
-                throw new Error("NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL is not defined.");
+                throw new Error("Unable to determine upload photo function URL. Please set NEXT_PUBLIC_UPLOAD_PHOTO_FUNCTION_URL or NEXT_PUBLIC_FIREBASE_PROJECT_ID.");
               }
 
               const response = await fetch(uploadPhotoFunctionUrl, {
@@ -96,7 +100,7 @@ export function PhotoUploadSection({ tripId, initialPhotos }: PhotoUploadSection
       <input type="file" multiple accept="image/*" className="hidden" id="photo-upload" onChange={handleFileChange} />
       <label htmlFor="photo-upload" className="cursor-pointer">
         <Button asChild>
-          <span><Camera className="mr-2"/>Upload Photos</span>
+          <span><Camera className="mr-2 h-4 w-4"/>Upload Photos</span>
         </Button>
       </label>
       <p className="text-sm text-gray-500 mt-2">Drag and drop your photos here, or click to browse.</p>

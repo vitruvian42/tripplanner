@@ -2,12 +2,12 @@
 'use server';
 
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
-
+import { generateItineraryFull } from '@/ai/flows/ai-itinerary-generation-progressive';
 
 import { revalidatePath } from 'next/cache';
 import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
-import type { Expense, Trip } from '@/lib/types';
+import type { Expense, Trip, Booking, FlightBooking, HotelBooking, ActivityBooking } from '@/lib/types';
 import { sendTripInviteEmail, sendWelcomeEmail } from '@/lib/email';
 import { getFirebaseAdmin } from '@/lib/firebase-admin'; // Added this line
 import { FieldValue } from 'firebase-admin/firestore';
@@ -17,6 +17,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 interface CreateTripParams {
   tripData: {
+    startingPoint: string;
     destination: string;
     startDate: string;
     endDate: string;
@@ -27,9 +28,26 @@ interface CreateTripParams {
 }
 
 export async function createTripAction({ tripData, userId }: CreateTripParams): Promise<{ success: boolean; tripId?: string; error?: string; }> {
-  const { db, auth } = getFirebaseAdmin();
-
   console.log('[ACTION] Starting createTripAction for user:', userId);
+  
+  let db, auth;
+  try {
+    const admin = getFirebaseAdmin();
+    db = admin.db;
+    auth = admin.auth;
+    console.log('[ACTION] Firebase Admin initialized successfully');
+  } catch (error: any) {
+    console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+    console.error('[ACTION] Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
+    return { 
+      success: false, 
+      error: `Firebase initialization failed: ${error.message}. Please check your server configuration.` 
+    };
+  }
 
   if (!process.env.GEMINI_API_KEY) {
     console.error('[ACTION] ERROR: GEMINI_API_KEY is not set.');
@@ -37,38 +55,53 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
   }
 
   try {
-    // 1. Generate itinerary using GenAI flow
-    console.log('[ACTION] Generating itinerary for:', tripData.destination);
-    const generatedEnrichedItinerary = await generateItinerary(tripData);
-    console.log('[ACTION] Successfully generated enriched itinerary.');
-
-    // 2. Select a placeholder image (or use image from generated itinerary if available)
+    // 1. Select a placeholder image
     const destinationHash = tripData.destination
       .split('')
       .reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const imageIndex = destinationHash % placeholderImages.length;
     const selectedImage = placeholderImages[imageIndex];
     
-    // 3. Save trip to Firestore
-    console.log('[ACTION] Attempting to save trip to Firestore...');
+    // 2. Save trip to Firestore immediately (without itinerary)
+    // The itinerary will be generated asynchronously in the background
+    console.log('[ACTION] Creating trip document immediately...');
     const tripPayload = {
       ...tripData,
-      itinerary: JSON.stringify(generatedEnrichedItinerary), // Store the raw JSON string for backward compatibility if needed
-      enrichedItinerary: generatedEnrichedItinerary, // Store the structured data
+      itinerary: '', // Will be populated when itinerary is generated
       ownerId: userId,
       collaborators: [userId],
-      createdAt: FieldValue.serverTimestamp(), // Admin SDK syntax
-      imageId: generatedEnrichedItinerary.hotel?.imageUrl || generatedEnrichedItinerary.days[0]?.activities[0]?.imageUrl || selectedImage.id, // Use generated image or fallback
+      createdAt: FieldValue.serverTimestamp(),
+      imageId: selectedImage.id,
       expenses: [],
+      // enrichedItinerary will be added when generated
     };
 
-    const docRef = await db.collection('trips').add(tripPayload); // Admin SDK syntax
-    console.log('[ACTION] Successfully saved trip to Firestore with ID:', docRef.id);
+    console.log('[ACTION] Trip payload before save:', {
+      ownerId: tripPayload.ownerId,
+      ownerIdType: typeof tripPayload.ownerId,
+      collaborators: tripPayload.collaborators,
+      collaboratorsType: Array.isArray(tripPayload.collaborators) ? 'array' : typeof tripPayload.collaborators,
+      userId: userId,
+      userIdType: typeof userId,
+    });
 
-    // 5. Revalidate dashboard path to show new trip
+    const docRef = await db.collection('trips').add(tripPayload);
+    console.log('[ACTION] Successfully saved trip to Firestore with ID:', docRef.id);
+    const tripId = docRef.id;
+
+    // 3. Generate itinerary asynchronously in the background (don't await)
+    // This allows us to return the trip ID immediately while generation happens
+    console.log('[ACTION] Starting async itinerary generation for trip:', tripId);
+    generateItineraryAsync(tripId, tripData).catch((error) => {
+      console.error('[ACTION] Error generating itinerary for trip', tripId, ':', error);
+      // Optionally update trip with error status or retry logic
+    });
+
+    // 4. Revalidate dashboard path to show new trip
     revalidatePath('/dashboard');
 
-    return { success: true, tripId: docRef.id };
+    // Return immediately - user can navigate to trip page while itinerary generates
+    return { success: true, tripId };
   } catch (error: any) {
     console.error('!!!!!!!! [ACTION] ERROR in createTripAction !!!!!!!!!!');
     console.error('Error name:', error.name);
@@ -80,13 +113,80 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
   }
 }
 
+/**
+ * Generate itinerary asynchronously and update the trip document
+ * This runs in the background after trip creation
+ */
+async function generateItineraryAsync(
+  tripId: string,
+  tripData: CreateTripParams['tripData']
+): Promise<void> {
+  // Initialize Firebase Admin at the start of the async function
+  // This ensures it's initialized in the async context, not just the calling context
+  let db;
+  try {
+    const admin = getFirebaseAdmin();
+    db = admin.db;
+  } catch (error: any) {
+    console.error('[ASYNC] Failed to initialize Firebase Admin:', error);
+    throw new Error(`Failed to initialize Firebase Admin in async function: ${error.message}`);
+  }
+  
+  try {
+    console.log('[ASYNC] Starting itinerary generation for trip:', tripId);
+    
+    // Generate itinerary using progressive flow
+    const generatedEnrichedItinerary = await generateItineraryFull(tripData);
+    
+    console.log('[ASYNC] Successfully generated itinerary for trip:', tripId);
+    
+    // Update trip with generated itinerary
+    const tripRef = db.collection('trips').doc(tripId);
+    
+    // Update with itinerary and potentially better image
+    const updateData: any = {
+      enrichedItinerary: generatedEnrichedItinerary,
+      itinerary: JSON.stringify(generatedEnrichedItinerary), // Store as JSON string for backward compatibility
+    };
+    
+    // Update image if we got a good one from the itinerary
+    if (generatedEnrichedItinerary.hotel?.imageUrl || generatedEnrichedItinerary.days[0]?.activities[0]?.imageUrl) {
+      // Keep existing imageId for now, we could update it if needed
+    }
+    
+    await tripRef.update(updateData);
+    
+    console.log('[ASYNC] Successfully updated trip', tripId, 'with itinerary');
+    
+    // Note: revalidatePath cannot be called from async background functions
+    // The trip page will automatically show updated data when user refreshes or navigates
+    // Client-side navigation will handle cache updates
+    
+  } catch (error: any) {
+    console.error('[ASYNC] Error generating itinerary for trip', tripId, ':', error);
+    console.error('[ASYNC] Error name:', error?.name);
+    console.error('[ASYNC] Error message:', error?.message);
+    console.error('[ASYNC] Error stack:', error?.stack);
+    // Could set an error status on the trip document here if needed
+    // Don't throw - we want to fail gracefully without breaking the main flow
+  }
+}
+
 interface AddExpenseParams {
     tripId: string;
     expenseData: Omit<Expense, 'id' | 'createdAt'>;
 }
 
 export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams): Promise<{ success: boolean; error?: string; }> {
-    const { db } = getFirebaseAdmin();
+    let db;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return { success: false, error: `Firebase initialization failed: ${error.message}` };
+    }
+    
     try {
         const tripRef = db.collection('trips').doc(tripId); // Admin SDK syntax
 
@@ -110,7 +210,15 @@ export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams
 }
 
 export async function deleteTripAction(tripId: string): Promise<{ success: boolean; error?: string; }> {
-  const { db } = getFirebaseAdmin();
+  let db;
+  try {
+    const admin = getFirebaseAdmin();
+    db = admin.db;
+  } catch (error: any) {
+    console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+    return { success: false, error: `Firebase initialization failed: ${error.message}` };
+  }
+  
   try {
     await db.collection('trips').doc(tripId).delete(); // Call the firestore function
 
@@ -136,7 +244,16 @@ interface ShareTripParams {
 }
 
 export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
-    const { db, auth } = getFirebaseAdmin();
+    let db, auth;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+        auth = admin.auth;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return { success: false, error: `Firebase initialization failed: ${error.message}` };
+    }
+    
     try {
         let inviteeId: string;
         let isNewUser = false;
@@ -184,6 +301,27 @@ export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams
         });
         console.log(`[ACTION] Added ${inviteeId} to trip collaborators.`);
 
+        // Get trip owner info for notification
+        const tripDoc = await tripRef.get();
+        const tripData = tripDoc.data();
+        const ownerDoc = await db.collection('users').doc(tripData?.ownerId).get();
+        const ownerData = ownerDoc.data();
+        const ownerName = ownerData?.displayName || ownerData?.email || 'Someone';
+
+        // Create notification for the invitee
+        const notificationsRef = db.collection('notifications');
+        await notificationsRef.add({
+            userId: inviteeId,
+            type: 'trip_collaborator_added',
+            title: 'You\'ve been added to a trip',
+            message: `${ownerName} added you as a collaborator to the trip "${trip.destination}"`,
+            tripId: tripId,
+            tripName: trip.destination,
+            read: false,
+            createdAt: FieldValue.serverTimestamp(),
+        });
+        console.log(`[ACTION] Created notification for user ${inviteeId}.`);
+
         // Send emails
         if (isNewUser) {
             await sendWelcomeEmail({ name: invitee.name, email: invitee.email });
@@ -199,5 +337,257 @@ export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams
     } catch (error: any) {
         console.error('Error sharing trip:', error);
         return { success: false, error: "Failed to share trip. " + error.message };
+    }
+}
+
+interface BookTripParams {
+    tripId: string;
+    userId: string;
+}
+
+export async function bookTripAction({ tripId, userId }: BookTripParams): Promise<{ success: boolean; bookingId?: string; error?: string }> {
+    let db;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return { success: false, error: `Firebase initialization failed: ${error.message}` };
+    }
+    
+    try {
+        console.log('[ACTION] Starting bookTripAction for trip:', tripId, 'user:', userId);
+        
+        // Get trip data
+        const tripDoc = await db.collection('trips').doc(tripId).get();
+        if (!tripDoc.exists) {
+            return { success: false, error: 'Trip not found.' };
+        }
+        
+        const tripData = tripDoc.data() as Trip;
+        if (!tripData.enrichedItinerary) {
+            return { success: false, error: 'Trip itinerary not available for booking.' };
+        }
+        
+        const enrichedItinerary = tripData.enrichedItinerary;
+        
+        // Generate mock bookings
+        const flights: FlightBooking[] = [];
+        if (enrichedItinerary.flights && enrichedItinerary.flights.length > 0) {
+            enrichedItinerary.flights.forEach((flight, index) => {
+                const bookingNumber = `FL${Date.now()}${index}`;
+                const confirmationCode = `${flight.type === 'roundTrip' ? 'RT' : 'INT'}${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+                
+                flights.push({
+                    id: randomUUID(),
+                    type: flight.type,
+                    route: flight.route,
+                    description: flight.description,
+                    bookingNumber,
+                    airline: flight.airlines?.[0] || 'Selected Airline',
+                    confirmationCode,
+                    departureDate: flight.type === 'roundTrip' ? tripData.startDate : undefined,
+                    returnDate: flight.type === 'roundTrip' ? tripData.endDate : undefined,
+                    howToUse: `1. Present this confirmation code at the airline check-in counter\n2. Show valid ID matching the booking name\n3. Check in online 24 hours before departure using the booking number\n4. Arrive at the airport at least 2 hours before international flights\n5. Contact the airline directly for any changes or cancellations`
+                });
+            });
+        }
+        
+        let hotel: HotelBooking | undefined;
+        if (enrichedItinerary.hotel) {
+            const bookingNumber = `HT${Date.now()}`;
+            const confirmationCode = `HTL${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+            
+            hotel = {
+                id: randomUUID(),
+                name: enrichedItinerary.hotel.name,
+                description: enrichedItinerary.hotel.description,
+                location: enrichedItinerary.hotel.location,
+                bookingNumber,
+                confirmationCode,
+                checkIn: tripData.startDate,
+                checkOut: tripData.endDate,
+                address: enrichedItinerary.hotel.location.address,
+                howToUse: `1. Present this confirmation code at hotel reception during check-in\n2. Valid ID required matching the booking name\n3. Check-in time: 3:00 PM | Check-out time: 11:00 AM\n4. Contact the hotel directly for early check-in or late check-out requests\n5. Keep this voucher safe until check-out`
+            };
+        }
+        
+        const activities: ActivityBooking[] = [];
+        enrichedItinerary.days.forEach((day, dayIndex) => {
+            day.activities.forEach((activity, actIndex) => {
+                const bookingNumber = `ACT${Date.now()}${dayIndex}${actIndex}`;
+                const confirmationCode = `ACT${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+                
+                const activityBooking: ActivityBooking = {
+                    id: randomUUID(),
+                    title: activity.title,
+                    description: activity.description,
+                    activityDate: tripData.startDate, // Could be enhanced to calculate based on day number
+                    bookingNumber,
+                    confirmationCode,
+                    howToUse: `1. Present this confirmation code at the activity venue\n2. Show valid ID matching the booking name\n3. Arrive 15 minutes before the scheduled activity time\n4. Contact the activity provider directly for rescheduling or cancellations\n5. Keep this voucher safe until the activity is completed`
+                };
+                
+                // Only add location if it exists (not undefined)
+                if (activity.location) {
+                    activityBooking.location = activity.location;
+                }
+                
+                activities.push(activityBooking);
+            });
+        });
+        
+        // Calculate total amount (mock calculation)
+        const flightAmount = flights.length * 500; // Mock: $500 per flight
+        const hotelAmount = hotel ? 1500 : 0; // Mock: $1500 for hotel
+        const activityAmount = activities.length * 50; // Mock: $50 per activity
+        const totalAmount = flightAmount + hotelAmount + activityAmount;
+        
+        // Helper function to remove undefined values recursively
+        const removeUndefined = (obj: any): any => {
+            if (obj === null || obj === undefined) {
+                return null;
+            }
+            if (Array.isArray(obj)) {
+                return obj.map(removeUndefined).filter(item => item !== undefined);
+            }
+            if (typeof obj === 'object') {
+                const cleaned: any = {};
+                for (const key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                        const value = removeUndefined(obj[key]);
+                        if (value !== undefined) {
+                            cleaned[key] = value;
+                        }
+                    }
+                }
+                return cleaned;
+            }
+            return obj;
+        };
+
+        // Create booking
+        const booking: Omit<Booking, 'id' | 'bookingDate'> = {
+            tripId,
+            userId,
+            totalAmount,
+            currency: 'USD',
+            status: 'confirmed',
+            flights,
+            hotel,
+            activities
+        };
+        
+        // Remove undefined values before saving to Firestore
+        const cleanedBooking = removeUndefined(booking);
+        
+        // Save to Firestore
+        const bookingRef = await db.collection('bookings').add({
+            ...cleanedBooking,
+            bookingDate: FieldValue.serverTimestamp()
+        });
+        
+        console.log('[ACTION] Successfully created booking with ID:', bookingRef.id);
+        
+        // Update trip document to store bookingId reference
+        // Only store bookingId if user is the trip owner
+        if (tripData.ownerId === userId) {
+            await db.collection('trips').doc(tripId).update({
+                bookingId: bookingRef.id
+            });
+            console.log('[ACTION] Updated trip with bookingId:', bookingRef.id);
+        }
+        
+        revalidatePath(`/trips/${tripId}`);
+        revalidatePath(`/trips/${tripId}/booking/${bookingRef.id}`);
+        
+        return { success: true, bookingId: bookingRef.id };
+    } catch (error: any) {
+        console.error('[ACTION] Error booking trip:', error);
+        return { success: false, error: error.message || 'Failed to create booking.' };
+    }
+}
+
+export async function getBookingById(bookingId: string): Promise<Booking | null> {
+    let db;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return null;
+    }
+    
+    try {
+        const bookingDoc = await db.collection('bookings').doc(bookingId).get();
+        if (!bookingDoc.exists) {
+            return null;
+        }
+        
+        const data = bookingDoc.data();
+        if (!data) {
+            return null;
+        }
+        
+        // Convert Firestore timestamp to ISO string
+        const bookingDate = data.bookingDate?.toDate?.()?.toISOString() || data.bookingDate || new Date().toISOString();
+        
+        return {
+            id: bookingDoc.id,
+            ...data,
+            bookingDate
+        } as Booking;
+    } catch (error: any) {
+        console.error('Error getting booking:', error);
+        return null;
+    }
+}
+
+/**
+ * Get booking by trip and user (server-side, bypasses security rules)
+ */
+export async function getBookingByTripAndUserAction(tripId: string, userId: string): Promise<Booking | null> {
+    let db;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return null;
+    }
+    
+    try {
+        console.log('[ACTION] getBookingByTripAndUserAction called for tripId:', tripId, 'userId:', userId);
+        
+        // Query using Admin SDK (bypasses security rules)
+        const bookingsRef = db.collection('bookings');
+        const querySnapshot = await bookingsRef
+            .where('tripId', '==', tripId)
+            .where('userId', '==', userId)
+            .limit(1)
+            .get();
+        
+        if (querySnapshot.empty) {
+            console.log('[ACTION] No booking found for tripId:', tripId, 'userId:', userId);
+            return null;
+        }
+        
+        const bookingDoc = querySnapshot.docs[0];
+        const data = bookingDoc.data();
+        
+        // Convert Firestore timestamp to ISO string
+        const bookingDate = data.bookingDate?.toDate?.()?.toISOString() || data.bookingDate || new Date().toISOString();
+        
+        const booking: Booking = {
+            id: bookingDoc.id,
+            ...data,
+            bookingDate
+        } as Booking;
+        
+        console.log('[ACTION] ✅ Found booking with ID:', booking.id);
+        return booking;
+    } catch (error: any) {
+        console.error('[ACTION] Error getting booking:', error);
+        return null;
     }
 }

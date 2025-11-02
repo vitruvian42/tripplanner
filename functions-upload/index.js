@@ -7,15 +7,25 @@ if (firebaseAdmin.apps.length === 0) {
 }
 
 const corsOptions = {
-  origin: '*', // how to allow all origins
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: true, // Allow all origins, but validate them
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
-  optionsSuccessStatus: 204 // Some legacy browsers (IE11, various SmartTVs) choke on 204
+  optionsSuccessStatus: 204
 };
 
-export const uploadTripPhoto = functions.https.onRequest((req, res) => {
-  cors(corsOptions)(req, res, async () => {
+// Apply CORS middleware
+const corsHandler = cors(corsOptions);
+
+export const uploadPhoto = functions.https.onRequest(async (req, res) => {
+  // Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    return corsHandler(req, res, () => {
+      res.status(204).send('');
+    });
+  }
+
+  return corsHandler(req, res, async () => {
     let decodedIdToken;
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       const idToken = req.headers.authorization.split('Bearer ')[1];

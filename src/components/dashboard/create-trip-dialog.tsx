@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const formSchema = z.object({
+  startingPoint: z.string().min(2, { message: 'Starting point is required.' }),
   destination: z.string().min(2, { message: 'Destination is required.' }),
   dates: z.object({
     from: z.date({ required_error: 'Start date is required.' }),
@@ -52,6 +53,7 @@ export function CreateTripDialog({ isOpen, onOpenChange }: CreateTripDialogProps
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      startingPoint: '',
       destination: '',
       interests: '',
     },
@@ -65,6 +67,7 @@ export function CreateTripDialog({ isOpen, onOpenChange }: CreateTripDialogProps
     setIsLoading(true);
 
     const tripData = {
+      startingPoint: values.startingPoint,
       destination: values.destination,
       startDate: values.dates.from.toISOString().split('T')[0],
       endDate: values.dates.to.toISOString().split('T')[0],
@@ -81,6 +84,8 @@ export function CreateTripDialog({ isOpen, onOpenChange }: CreateTripDialogProps
       });
       onOpenChange(false);
       form.reset();
+      // Small delay to ensure Firestore write propagates before client-side read
+      await new Promise(resolve => setTimeout(resolve, 300));
       router.push(`/trips/${result.tripId}`);
     } else {
       toast({
@@ -102,6 +107,19 @@ export function CreateTripDialog({ isOpen, onOpenChange }: CreateTripDialogProps
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="startingPoint"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Starting Point</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., New York, USA" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="destination"

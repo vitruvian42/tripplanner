@@ -1,7 +1,6 @@
-
 import { getFirebaseAdmin } from './firebase-admin';
 import type { Trip, FirestoreTrip, Collaborator } from './types';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 
 export async function getTripById(tripId: string): Promise<Trip | null> {
   const { db } = getFirebaseAdmin(); // Get db instance here
@@ -49,4 +48,25 @@ export async function getCollaboratorDetails(uids: string[]): Promise<Collaborat
   });
 
   return collaborators;
+}
+
+
+export async function getTripCollaborators(tripId: string): Promise<Collaborator[]> {
+  const { db } = getFirebaseAdmin(); // Get db instance here
+  const docRef = db.collection('trips').doc(tripId);
+  const docSnap = await docRef.get();
+
+  if (docSnap.exists) {
+    const data = docSnap.data() as FirestoreTrip;
+    const collaboratorUids = data.collaborators || [];
+    
+    // Add the owner's UID to the list to fetch their details as well
+    if (data.owner) {
+      collaboratorUids.push(data.owner);
+    }
+    
+    return await getCollaboratorDetails(collaboratorUids);
+  } else {
+    return [];
+  }
 }

@@ -20,6 +20,7 @@ import { googleAI } from '@genkit-ai/googleai';
 
 
 const ItineraryInputSchema = z.object({
+  startingPoint: z.string().describe('The starting point or origin city for the trip.'),
   destination: z.string().describe('The destination for the trip.'),
   startDate: z.string().describe('The start date of the trip (YYYY-MM-DD).'),
   endDate: z.string().describe('The end date of the trip (YYYY-MM-DD).'),
@@ -58,9 +59,19 @@ const EnrichedDaySchema = z.object({
   activities: z.array(EnrichedActivitySchema),
 });
 
+const FlightRecommendationSchema = z.object({
+  type: z.enum(['roundTrip', 'internal']).describe('Type of flight: roundTrip for origin-destination round trip, internal for flights within the destination country/region.'),
+  route: z.string().describe('Flight route description (e.g., "New York to Paris" or "Paris to Nice").'),
+  description: z.string().describe('Description and recommendations for this flight route.'),
+  estimatedCost: z.string().optional().describe('Estimated cost range for the flight.'),
+  bestTimeToBook: z.string().optional().describe('Best time to book this flight.'),
+  airlines: z.array(z.string()).optional().describe('Recommended airlines for this route.'),
+});
+
 const ItineraryOutputSchema = z.object({
   days: z.array(EnrichedDaySchema),
   hotel: HotelSchema.optional(),
+  flights: z.array(FlightRecommendationSchema).optional().describe('Flight recommendations including round trip from starting point to destination and internal flights if applicable.'),
 });
 export type ItineraryOutput = z.infer<typeof ItineraryOutputSchema>;
 
@@ -73,9 +84,10 @@ const itineraryPrompt = ai.definePrompt({
   name: 'itineraryPrompt',
   input: {schema: ItineraryInputSchema},
   output: {schema: ItineraryOutputSchema}, // Use the new structured schema
-  model: googleAI.model('gemini-1.5-flash'),
+  model: googleAI.model('gemini-2.5-flash'),
   prompt: `You are an AI travel assistant. Generate a detailed trip itinerary based on the following information:
 
+Starting Point: {{{startingPoint}}}
 Destination: {{{destination}}}
 Start Date: {{{startDate}}}
 End Date: {{{endDate}}}
@@ -114,10 +126,31 @@ interface EnrichedDay {
   activities: EnrichedActivity[];
 }
 
+interface FlightRecommendation {
+  type: 'roundTrip' | 'internal'; // 'roundTrip' for origin-destination round trip, 'internal' for flights within destination
+  route: string; // e.g., "New York to Paris" or "Paris to Nice"
+  description: string; // Description and recommendations for this flight route
+  estimatedCost?: string; // Estimated cost range
+  bestTimeToBook?: string; // Best time to book this flight
+  airlines?: string[]; // Recommended airlines for this route
+}
+
 interface EnrichedItinerary {
   days: EnrichedDay[];
   hotel?: Hotel; // Best hotel suggestion for the trip
+  flights?: FlightRecommendation[]; // Flight recommendations including round trip and internal flights
 }
+
+IMPORTANT FLIGHT RECOMMENDATIONS:
+1. Always include a round trip flight recommendation from the starting point ({{{startingPoint}}}) to the destination ({{{destination}}}) and back.
+2. If the destination is a large country/region with multiple cities worth visiting (e.g., India, USA, Europe), suggest internal flights between major cities that would enhance the itinerary.
+3. For internal flights, only suggest if they make sense for the itinerary and if the distance/time saved is significant (e.g., flights between major cities that are far apart by land/rail).
+4. Provide practical recommendations including:
+   - Route description
+   - Estimated costs based on the budget level
+   - Best time to book
+   - Recommended airlines
+   - Tips for getting the best deals
 
 Ensure that for each activity, if you can find a real, publicly accessible image URL, provide it. Otherwise, omit the 'imageUrl' field. Provide precise latitude, longitude, and address. For the hotel, if you can find a real, publicly accessible image URL, provide it. Otherwise, omit the 'imageUrl' field. Also provide its name, description, and location.
 `,

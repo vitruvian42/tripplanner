@@ -3,9 +3,12 @@
 import React, { useState } from 'react';
 import { defaultPlaceholderImage } from '@/lib/placeholder-images';
 
-interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface ImageWithFallbackProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt'> {
+  src?: string;
+  alt?: string;
   fallbackSrc?: string;
   fill?: boolean;
+  priority?: boolean;
 }
 
 export function ImageWithFallback({ src, fallbackSrc = defaultPlaceholderImage.imageUrl, alt, fill, className, priority, ...props }: ImageWithFallbackProps) {

@@ -10,21 +10,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react';
 
 import Link from 'next/link';
-import { placeholderImageById, defaultPlaceholderImage } from '@/lib/placeholder-images';
+import { placeholderImageById, defaultPlaceholderImage, getRelevantPlaceholderImage } from '@/lib/placeholder-images';
+import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import { ClientOnly } from '@/components/ui/client-only';
 
 const TripCard = ({ trip }: { trip: Trip }) => {
-    const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
+    // Use real high-definition image for the destination
+    const imageInfo = getRelevantPlaceholderImage(trip.destination);
     return (
         <Card key={trip.id} className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
             <Link href={`/trips/${trip.id}`} className="block">
                 <CardHeader className="p-0">
                     <div className="aspect-[4/3] relative">
-                        <img
+                        <ImageWithFallback
                             src={imageInfo.imageUrl}
                             alt={trip.destination}
                             data-ai-hint={imageInfo.imageHint}
-                            className="object-cover absolute inset-0 h-full w-full"
+                            fill
+                            className="object-cover"
                         />
                     </div>
                 </CardHeader>
