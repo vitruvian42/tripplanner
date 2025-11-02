@@ -36,12 +36,12 @@ export function FlightRecommendations({ flights }: FlightRecommendationsProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <div>
         <h2 className="text-2xl sm:text-3xl font-bold font-headline mb-2">Flight Recommendations</h2>
         <p className="text-muted-foreground">Recommended flights for your trip</p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 w-full">
         {flights.map((flight, index) => (
           <Card key={index} className="relative overflow-hidden">
             <CardHeader>

@@ -22,12 +22,61 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
+import { useEffect, useState } from 'react';
+import { getUnreadNotifications, markNotificationAsRead } from '@/lib/firestore';
+import type { Notification } from '@/lib/types';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function DashboardHeader() {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
-  
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setNotifications([]);
+      setLoadingNotifications(false);
+      return;
+    }
+
+    const loadNotifications = async () => {
+      try {
+        setLoadingNotifications(true);
+        const unreadNotifications = await getUnreadNotifications(user.uid);
+        setNotifications(unreadNotifications);
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+
+    loadNotifications();
+
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user?.uid]);
+
+  const handleNotificationClick = async (notification: Notification) => {
+    try {
+      await markNotificationAsRead(notification.id);
+      // Remove from local state
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      
+      // Navigate to the trip
+      router.push(`/trips/${notification.tripId}`);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to mark notification as read.',
+      });
+    }
+  };
 
   const handleLogout = async () => {
     const auth = getFirebaseAuth();
@@ -100,7 +149,7 @@ export default function DashboardHeader() {
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-2 ml-4">
+        <div className="flex items-center gap-2 ml-auto">
           {/* Create trip button - hidden on small screens */}
           <Button size="sm" className="hidden sm:flex" asChild>
             <Link href="/dashboard">
@@ -114,18 +163,42 @@ export default function DashboardHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative h-10 w-10">
                 <Bell className="h-5 w-5" />
-                <Badge variant="destructive" className="absolute top-0 right-0 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-semibold">
-                  3
-                </Badge>
+                {notifications.length > 0 && (
+                  <Badge variant="destructive" className="absolute top-0 right-0 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-semibold">
+                    {notifications.length > 9 ? '9+' : notifications.length}
+                  </Badge>
+                )}
                 <span className="sr-only">Notifications</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-80" align="end" forceMount>
               <DropdownMenuLabel>Notifications</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <div className="p-4 text-center text-sm text-muted-foreground">
-                <p>No new notifications</p>
-              </div>
+              {loadingNotifications ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  <p>Loading notifications...</p>
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  <p>No new notifications</p>
+                </div>
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.map((notification) => (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      className="flex flex-col items-start gap-1 p-4 cursor-pointer hover:bg-accent"
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                      <div className="font-semibold text-sm">{notification.title}</div>
+                      <div className="text-sm text-muted-foreground">{notification.message}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

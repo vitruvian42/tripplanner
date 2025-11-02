@@ -1,6 +1,6 @@
-import { doc, getDoc, updateDoc, PartialWithFieldValue, collection, query, where, getDocs, setDoc, deleteDoc, type Timestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, PartialWithFieldValue, collection, query, where, getDocs, setDoc, deleteDoc, orderBy, limit, type Timestamp } from 'firebase/firestore';
 import { getFirestoreDb, getFirebaseAuth } from './firebase';
-import type { Trip, FirestoreTrip, Collaborator, Booking, FirestoreBooking } from './types';
+import type { Trip, FirestoreTrip, Collaborator, Booking, FirestoreBooking, Notification, FirestoreNotification } from './types';
 
 export async function getTripById(tripId: string, retries: number = 3): Promise<Trip | null> {
   const db = getFirestoreDb();
@@ -204,5 +204,65 @@ export async function getBookingByTripAndUser(tripId: string, userId: string): P
     console.error(`[FIRESTORE] Error code:`, error?.code);
     console.error(`[FIRESTORE] Error message:`, error?.message);
     return null;
+  }
+}
+
+export async function getUnreadNotifications(userId: string): Promise<Notification[]> {
+  console.log(`[FIRESTORE] getUnreadNotifications called for userId: ${userId}`);
+  
+  try {
+    const db = getFirestoreDb();
+    const notificationsRef = collection(db, 'notifications');
+    
+    // Query for unread notifications for this user, ordered by creation date (newest first)
+    const q = query(
+      notificationsRef,
+      where('userId', '==', userId),
+      where('read', '==', false),
+      orderBy('createdAt', 'desc'),
+      limit(50) // Limit to 50 most recent unread notifications
+    );
+    
+    console.log(`[FIRESTORE] Querying notifications collection for userId: ${userId}`);
+    const querySnapshot = await getDocs(q);
+    
+    const notifications: Notification[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data() as FirestoreNotification;
+      notifications.push({
+        id: doc.id,
+        ...data,
+        createdAt: (data.createdAt as Timestamp)?.toDate?.()?.toISOString() || new Date().toISOString(),
+      });
+    });
+    
+    console.log(`[FIRESTORE] ✅ Found ${notifications.length} unread notifications`);
+    return notifications;
+  } catch (error: any) {
+    console.error(`[FIRESTORE] ❌ Error querying notifications:`, error);
+    console.error(`[FIRESTORE] Error code:`, error?.code);
+    console.error(`[FIRESTORE] Error message:`, error?.message);
+    return [];
+  }
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  console.log(`[FIRESTORE] markNotificationAsRead called for notificationId: ${notificationId}`);
+  
+  try {
+    const db = getFirestoreDb();
+    const notificationRef = doc(db, 'notifications', notificationId);
+    
+    await updateDoc(notificationRef, {
+      read: true,
+    });
+    
+    console.log(`[FIRESTORE] ✅ Marked notification ${notificationId} as read`);
+  } catch (error: any) {
+    console.error(`[FIRESTORE] ❌ Error marking notification as read:`, error);
+    console.error(`[FIRESTORE] Error code:`, error?.code);
+    console.error(`[FIRESTORE] Error message:`, error?.message);
+    throw error;
   }
 }

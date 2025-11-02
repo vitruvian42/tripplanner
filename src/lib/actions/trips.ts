@@ -28,9 +28,26 @@ interface CreateTripParams {
 }
 
 export async function createTripAction({ tripData, userId }: CreateTripParams): Promise<{ success: boolean; tripId?: string; error?: string; }> {
-  const { db, auth } = getFirebaseAdmin();
-
   console.log('[ACTION] Starting createTripAction for user:', userId);
+  
+  let db, auth;
+  try {
+    const admin = getFirebaseAdmin();
+    db = admin.db;
+    auth = admin.auth;
+    console.log('[ACTION] Firebase Admin initialized successfully');
+  } catch (error: any) {
+    console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+    console.error('[ACTION] Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
+    return { 
+      success: false, 
+      error: `Firebase initialization failed: ${error.message}. Please check your server configuration.` 
+    };
+  }
 
   if (!process.env.GEMINI_API_KEY) {
     console.error('[ACTION] ERROR: GEMINI_API_KEY is not set.');
@@ -104,7 +121,16 @@ async function generateItineraryAsync(
   tripId: string,
   tripData: CreateTripParams['tripData']
 ): Promise<void> {
-  const { db } = getFirebaseAdmin();
+  // Initialize Firebase Admin at the start of the async function
+  // This ensures it's initialized in the async context, not just the calling context
+  let db;
+  try {
+    const admin = getFirebaseAdmin();
+    db = admin.db;
+  } catch (error: any) {
+    console.error('[ASYNC] Failed to initialize Firebase Admin:', error);
+    throw new Error(`Failed to initialize Firebase Admin in async function: ${error.message}`);
+  }
   
   try {
     console.log('[ASYNC] Starting itinerary generation for trip:', tripId);
@@ -138,8 +164,11 @@ async function generateItineraryAsync(
     
   } catch (error: any) {
     console.error('[ASYNC] Error generating itinerary for trip', tripId, ':', error);
+    console.error('[ASYNC] Error name:', error?.name);
+    console.error('[ASYNC] Error message:', error?.message);
+    console.error('[ASYNC] Error stack:', error?.stack);
     // Could set an error status on the trip document here if needed
-    throw error;
+    // Don't throw - we want to fail gracefully without breaking the main flow
   }
 }
 
@@ -149,7 +178,15 @@ interface AddExpenseParams {
 }
 
 export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams): Promise<{ success: boolean; error?: string; }> {
-    const { db } = getFirebaseAdmin();
+    let db;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return { success: false, error: `Firebase initialization failed: ${error.message}` };
+    }
+    
     try {
         const tripRef = db.collection('trips').doc(tripId); // Admin SDK syntax
 
@@ -173,7 +210,15 @@ export async function addExpenseAction({ tripId, expenseData }: AddExpenseParams
 }
 
 export async function deleteTripAction(tripId: string): Promise<{ success: boolean; error?: string; }> {
-  const { db } = getFirebaseAdmin();
+  let db;
+  try {
+    const admin = getFirebaseAdmin();
+    db = admin.db;
+  } catch (error: any) {
+    console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+    return { success: false, error: `Firebase initialization failed: ${error.message}` };
+  }
+  
   try {
     await db.collection('trips').doc(tripId).delete(); // Call the firestore function
 
@@ -199,7 +244,16 @@ interface ShareTripParams {
 }
 
 export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams): Promise<{ success: boolean; error?: string; }> {
-    const { db, auth } = getFirebaseAdmin();
+    let db, auth;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+        auth = admin.auth;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return { success: false, error: `Firebase initialization failed: ${error.message}` };
+    }
+    
     try {
         let inviteeId: string;
         let isNewUser = false;
@@ -247,6 +301,27 @@ export async function shareTripAction({ tripId, trip, invitee }: ShareTripParams
         });
         console.log(`[ACTION] Added ${inviteeId} to trip collaborators.`);
 
+        // Get trip owner info for notification
+        const tripDoc = await tripRef.get();
+        const tripData = tripDoc.data();
+        const ownerDoc = await db.collection('users').doc(tripData?.ownerId).get();
+        const ownerData = ownerDoc.data();
+        const ownerName = ownerData?.displayName || ownerData?.email || 'Someone';
+
+        // Create notification for the invitee
+        const notificationsRef = db.collection('notifications');
+        await notificationsRef.add({
+            userId: inviteeId,
+            type: 'trip_collaborator_added',
+            title: 'You\'ve been added to a trip',
+            message: `${ownerName} added you as a collaborator to the trip "${trip.destination}"`,
+            tripId: tripId,
+            tripName: trip.destination,
+            read: false,
+            createdAt: FieldValue.serverTimestamp(),
+        });
+        console.log(`[ACTION] Created notification for user ${inviteeId}.`);
+
         // Send emails
         if (isNewUser) {
             await sendWelcomeEmail({ name: invitee.name, email: invitee.email });
@@ -271,7 +346,14 @@ interface BookTripParams {
 }
 
 export async function bookTripAction({ tripId, userId }: BookTripParams): Promise<{ success: boolean; bookingId?: string; error?: string }> {
-    const { db } = getFirebaseAdmin();
+    let db;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return { success: false, error: `Firebase initialization failed: ${error.message}` };
+    }
     
     try {
         console.log('[ACTION] Starting bookTripAction for trip:', tripId, 'user:', userId);
@@ -427,7 +509,14 @@ export async function bookTripAction({ tripId, userId }: BookTripParams): Promis
 }
 
 export async function getBookingById(bookingId: string): Promise<Booking | null> {
-    const { db } = getFirebaseAdmin();
+    let db;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return null;
+    }
     
     try {
         const bookingDoc = await db.collection('bookings').doc(bookingId).get();
@@ -458,7 +547,14 @@ export async function getBookingById(bookingId: string): Promise<Booking | null>
  * Get booking by trip and user (server-side, bypasses security rules)
  */
 export async function getBookingByTripAndUserAction(tripId: string, userId: string): Promise<Booking | null> {
-    const { db } = getFirebaseAdmin();
+    let db;
+    try {
+        const admin = getFirebaseAdmin();
+        db = admin.db;
+    } catch (error: any) {
+        console.error('[ACTION] Failed to initialize Firebase Admin:', error);
+        return null;
+    }
     
     try {
         console.log('[ACTION] getBookingByTripAndUserAction called for tripId:', tripId, 'userId:', userId);

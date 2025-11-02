@@ -166,3 +166,20 @@ export interface Booking {
 export interface FirestoreBooking extends Omit<Booking, 'id' | 'bookingDate'> {
   bookingDate: Timestamp;
 }
+
+// Notification types
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'trip_collaborator_added';
+  title: string;
+  message: string;
+  tripId: string;
+  tripName?: string; // Destination for quick reference
+  read: boolean;
+  createdAt: string; // ISO string
+}
+
+export interface FirestoreNotification extends Omit<Notification, 'id' | 'createdAt'> {
+  createdAt: Timestamp;
+}

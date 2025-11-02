@@ -333,9 +333,9 @@ export default function TripPage({ params }: TripPageProps) {
   return (
     <div className="w-full">
       {/* Image Gallery Header */}
-      <div className="grid grid-cols-4 grid-rows-2 gap-2 h-96">
+      <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-2 h-64 md:h-96">
         {/* Main Image */}
-        <div className="col-span-2 row-span-2 relative">
+        <div className="col-span-1 md:col-span-2 md:row-span-2 relative">
            <ImageWithFallback
               src={
                 trip.enrichedItinerary?.hotel?.imageUrl && !trip.enrichedItinerary.hotel.imageUrl.includes('example.com')
@@ -346,17 +346,17 @@ export default function TripPage({ params }: TripPageProps) {
               }
               alt={`Main image for ${trip.destination}`}
               fill
-              className="object-cover rounded-l-xl"
+              className="object-cover rounded-xl md:rounded-l-xl md:rounded-tr-none md:rounded-br-none"
           />
         </div>
-        {/* Smaller Images */}
+        {/* Smaller Images - Hidden on mobile */}
         {trip.enrichedItinerary?.days.flatMap(day => day.activities).slice(0, 4).map((activity, index) => {
           const activityImageUrl = activity.imageUrl && !activity.imageUrl.includes('example.com')
             ? activity.imageUrl
             : getActivityImageUrl(activity.title, trip.destination);
           
           return (
-            <div key={index} className="relative">
+            <div key={index} className="relative hidden md:block">
               <ImageWithFallback
                 src={activityImageUrl}
                 alt={activity.title}
@@ -366,7 +366,7 @@ export default function TripPage({ params }: TripPageProps) {
             </div>
           );
         }) || galleryImages.slice(1, 5).map((image, index) => (
-          <div key={index} className="relative">
+          <div key={index} className="relative hidden md:block">
             <ImageWithFallback
               src={image.imageUrl}
               alt={`Image ${index + 1} for ${trip.destination}`}
@@ -461,7 +461,9 @@ export default function TripPage({ params }: TripPageProps) {
                    <span>{trip.enrichedItinerary?.days.length || 0} days planned</span>
                  </div>
                </div>
-               <FlightRecommendations flights={trip.enrichedItinerary?.flights} />
+               <div className="w-full">
+                 <FlightRecommendations flights={trip.enrichedItinerary?.flights} />
+               </div>
                <ItineraryTimeline itinerary={trip.enrichedItinerary ?? { days: [] }} destination={trip.destination} />
             </TabsContent>
              <TabsContent value="expenses" className="mt-6 space-y-6">
