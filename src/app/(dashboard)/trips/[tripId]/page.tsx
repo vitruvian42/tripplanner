@@ -377,23 +377,27 @@ export default function TripPage({ params }: TripPageProps) {
         ))}
       </div>
 
-      <div className="container mx-auto max-w-7xl mt-8">
-          <div className="flex justify-between items-start">
-             <TripHighlights trip={{
-              destination: trip.destination,
-              startDate: trip.startDate,
-              endDate: trip.endDate,
-              budget: trip.budget,
-              interests: trip.interests,
-              collaborators: collaborators,
-            }} />
-            <div className="flex items-center gap-2">
+      <div className="container mx-auto max-w-7xl mt-8 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+             <div className="flex-1">
+               <TripHighlights trip={{
+                destination: trip.destination,
+                startDate: trip.startDate,
+                endDate: trip.endDate,
+                budget: trip.budget,
+                interests: trip.interests,
+                collaborators: collaborators,
+              }} />
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 lg:flex-col lg:items-stretch lg:gap-3">
               {booking ? (
                 <Button 
                   onClick={() => router.push(`/trips/${tripId}/booking/${booking.id}`)}
                   className="bg-primary hover:bg-primary/90"
                 >
-                  <Ticket className="mr-2 h-4 w-4" /> View Voucher
+                  <Ticket className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">View Voucher</span>
+                  <span className="sm:hidden">Voucher</span>
                 </Button>
               ) : (
                 <Button 
@@ -403,18 +407,23 @@ export default function TripPage({ params }: TripPageProps) {
                 >
                   {isBooking ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Booking...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <span className="hidden sm:inline">Booking...</span>
+                      <span className="sm:hidden">...</span>
                     </>
                   ) : (
                     <>
-                      <CreditCard className="mr-2 h-4 w-4" /> Book Complete Trip
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">Book Complete Trip</span>
+                      <span className="sm:hidden">Book Trip</span>
                     </>
                   )}
                 </Button>
               )}
               <ShareTripDialog tripId={trip.id} trip={trip}>
                 <Button variant="outline">
-                  <Share2 className="mr-2 h-4 w-4" /> Share
+                  <Share2 className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Share</span>
                 </Button>
               </ShareTripDialog>
               <DeleteTripButton tripId={trip.id} />

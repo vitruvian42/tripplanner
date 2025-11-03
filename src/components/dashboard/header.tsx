@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, LogOut, Menu, Package, Search, Settings, Users, Map, Bell, Plus } from 'lucide-react';
+import { Home, LogOut, Menu, Package, Search, Settings, Users, Map, Bell } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -150,14 +150,6 @@ export default function DashboardHeader() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2 ml-auto">
-          {/* Create trip button - hidden on small screens */}
-          <Button size="sm" className="hidden sm:flex" asChild>
-            <Link href="/dashboard">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden lg:inline">Create Trip</span>
-            </Link>
-          </Button>
-
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -34,7 +34,8 @@ export function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
       <AlertDialogTrigger asChild>
         <Button variant="destructive" disabled={isDeleting}>
           {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-          Delete Trip
+          <span className="hidden sm:inline">Delete Trip</span>
+          <span className="sm:hidden">Delete</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

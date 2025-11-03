@@ -41,18 +41,20 @@ export function FlightRecommendations({ flights }: FlightRecommendationsProps) {
         <h2 className="text-2xl sm:text-3xl font-bold font-headline mb-2">Flight Recommendations</h2>
         <p className="text-muted-foreground">Recommended flights for your trip</p>
       </div>
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 w-full">
+      <div className="flex flex-col gap-4 w-full">
         {flights.map((flight, index) => (
-          <Card key={index} className="relative overflow-hidden">
+          <Card key={index} className="relative overflow-hidden w-full">
             <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                {flight.type === 'roundTrip' ? (
-                  <Globe className="h-5 w-5 text-primary" />
-                ) : (
-                  <Plane className="h-5 w-5 text-primary" />
-                )}
-                <CardTitle className="text-lg font-headline">{flight.route}</CardTitle>
-                <span className={`ml-auto text-xs px-2 py-1 rounded-full ${
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  {flight.type === 'roundTrip' ? (
+                    <Globe className="h-5 w-5 text-primary shrink-0" />
+                  ) : (
+                    <Plane className="h-5 w-5 text-primary shrink-0" />
+                  )}
+                  <CardTitle className="text-lg sm:text-xl font-headline">{flight.route}</CardTitle>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full w-fit ${
                   flight.type === 'roundTrip' 
                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
                     : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
@@ -60,7 +62,7 @@ export function FlightRecommendations({ flights }: FlightRecommendationsProps) {
                   {flight.type === 'roundTrip' ? 'Round Trip' : 'Internal'}
                 </span>
               </div>
-              <CardDescription>{flight.description}</CardDescription>
+              <CardDescription className="text-sm sm:text-base leading-relaxed">{flight.description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {flight.estimatedCost && (
