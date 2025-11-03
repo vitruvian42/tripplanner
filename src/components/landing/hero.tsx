@@ -154,7 +154,7 @@ export function LandingHero() {
         <VideoPlayerDialog
           isOpen={isVideoOpen}
           onOpenChange={setIsVideoOpen}
-          videoUrl="https://videos.pexels.com/video-files/3209828/3209828-hd_1920_1080_25fps.mp4"
+          videoUrl="https://drive.google.com/file/d/1spjcFDFnWbOqdiLHP6Lf1sOzoxD6AZMc/view?usp=sharing"
         />
       </ClientOnly>
     </>
