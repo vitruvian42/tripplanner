@@ -9,6 +9,8 @@ import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { generateItineraryProgressive } from '@/ai/flows/ai-itinerary-generation-progressive';
 import { getTripById, updateTrip, getCollaboratorDetails } from '@/lib/firestore';
+import { getFirestoreDb } from '@/lib/firebase';
+import { doc, onSnapshot, type Timestamp } from 'firebase/firestore';
 import { getBookingByTripAndUserAction } from '@/lib/actions/trips';
 import { TripHighlights } from '@/components/trip/trip-highlights';
 import { AssistantCard } from '@/components/trip/assistant-card';
@@ -54,6 +56,7 @@ export default function TripPage({ params }: TripPageProps) {
   const [generatingItinerary, setGeneratingItinerary] = useState(false);
   const [itineraryProgress, setItineraryProgress] = useState(0);
   const [itineraryMessage, setItineraryMessage] = useState<string | undefined>(undefined);
+  const [isItineraryComplete, setIsItineraryComplete] = useState(false);
 
   useEffect(() => {
     // Wait for authentication to be ready before fetching trip data
@@ -61,193 +64,160 @@ export default function TripPage({ params }: TripPageProps) {
       return;
     }
 
-    const fetchTripData = async () => {
-      try {
-        setError(null);
-        console.log(`[TRIP PAGE] Starting fetchTripData for trip ${tripId}`);
-        console.log(`[TRIP PAGE] Current user:`, user?.uid, user?.email);
-        
-        console.log(`[TRIP PAGE] Step 1: Calling getTripById...`);
-        const tripData = await getTripById(tripId);
-        console.log(`[TRIP PAGE] Step 1 complete: getTripById returned`, tripData ? 'trip data' : 'null');
+    setLoading(true);
+    console.log(`[TRIP PAGE] Setting up real-time listener for trip ${tripId}`);
 
-        if (!tripData) {
-          console.log(`[TRIP PAGE] Trip not found, calling notFound()`);
-          notFound();
-          return;
-        }
+    // Set up real-time Firestore listener to watch for progressive updates
+    const db = getFirestoreDb();
+    const tripDocRef = doc(db, 'trips', tripId);
+    
+    const unsubscribe = onSnapshot(
+      tripDocRef,
+      async (docSnapshot) => {
+        try {
+          if (!docSnapshot.exists()) {
+            console.log(`[TRIP PAGE] Trip not found, calling notFound()`);
+            notFound();
+            return;
+          }
 
-        console.log(`[TRIP PAGE] Step 2: Checking enrichedItinerary...`);
-        if (!tripData.enrichedItinerary) {
-          console.log(`[TRIP PAGE] Trip ${tripId} missing enrichedItinerary.`);
+          const tripData = { id: docSnapshot.id, ...docSnapshot.data() } as Trip & {
+            createdAt?: Timestamp;
+          };
           
-          // Wait a moment to see if background generation completes
-          // This prevents duplicate generation when trip is just created
-          setGeneratingItinerary(true);
-          setItineraryProgress(5);
-          setItineraryMessage('Checking itinerary status...');
-          
-          // Give background generation a few seconds to complete
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Re-check trip data to see if background generation completed
-          const updatedTripData = await getTripById(tripId);
-          if (updatedTripData?.enrichedItinerary) {
-            console.log(`[TRIP PAGE] Background generation completed, using existing itinerary`);
-            tripData.enrichedItinerary = updatedTripData.enrichedItinerary;
-            setGeneratingItinerary(false);
-            setItineraryProgress(0);
-            setItineraryMessage(undefined);
+          console.log(`[TRIP PAGE] Trip document updated - enrichedItinerary status:`, {
+            hasDays: !!tripData.enrichedItinerary?.days?.length,
+            hasHotel: !!tripData.enrichedItinerary?.hotel,
+            hasFlights: !!tripData.enrichedItinerary?.flights?.length,
+            daysCount: tripData.enrichedItinerary?.days?.length || 0,
+          });
+
+          // Update generating state based on itinerary completeness
+          if (!tripData.enrichedItinerary) {
+            setGeneratingItinerary(true);
+            setItineraryProgress(5);
+            setItineraryMessage('Initializing itinerary generation...');
+            setIsItineraryComplete(false);
           } else {
-            // Background generation hasn't completed, generate it now
-            console.log(`[TRIP PAGE] Generating progressively on client...`);
-            try {
-              setItineraryProgress(10);
-              setItineraryMessage('Creating your personalized itinerary...');
-              
-              // Use progressive generation - this generates summary first, then full details
-              console.log(`[TRIP PAGE] Step 2a: Calling generateItineraryProgressive...`);
-              
-              const generationPromise = generateItineraryProgressive({
-                startingPoint: tripData.startingPoint || tripData.destination,
-                destination: tripData.destination,
-                startDate: tripData.startDate,
-                endDate: tripData.endDate,
-                interests: tripData.interests,
-                budget: tripData.budget,
-              });
-
-              // Wait for summary (should be quick)
-              setItineraryProgress(20);
-              setItineraryMessage('Exploring amazing destinations...');
-              
-              const progressiveResult = await generationPromise;
-
-              // Show summary progress
-              if (progressiveResult.summary) {
-                setItineraryProgress(50);
-                setItineraryMessage('Adding detailed activities and recommendations...');
-              }
-
-              // Wait for full itinerary
-              const generatedOutput = progressiveResult.fullItinerary;
-              if (generatedOutput) {
-                setItineraryProgress(85);
-                setItineraryMessage('Finalizing your itinerary...');
-                
-                console.log(`[TRIP PAGE] Step 2a complete: generateItineraryProgressive returned`);
-                tripData.enrichedItinerary = generatedOutput;
-
-                setItineraryProgress(95);
-                if (tripData.enrichedItinerary) {
-                  console.log(`[TRIP PAGE] Step 2b: Calling updateTrip to save enrichedItinerary...`);
-                  await updateTrip(tripId, { enrichedItinerary: tripData.enrichedItinerary });
-                  console.log(`[TRIP PAGE] Step 2b complete: updateTrip succeeded`);
-                  console.log(`[TRIP PAGE] Saved enrichedItinerary for trip ${tripId}.`);
-                  setItineraryProgress(100);
-                } else {
-                  console.warn(`[TRIP PAGE] Generation process did not return a valid itinerary for trip ${tripId}.`);
-                }
-              } else {
-                console.warn(`[TRIP PAGE] Generation process did not return a valid itinerary for trip ${tripId}.`);
-              }
-            } catch (e: unknown) {
-              const error = e as { code?: string; message?: string };
-              console.error(`[TRIP PAGE] ❌ Error in step 2 (generate/update itinerary):`, e);
-              console.error(`[TRIP PAGE] Error code:`, error?.code);
-              console.error(`[TRIP PAGE] Error message:`, error?.message);
-              throw e; // Re-throw to be caught by outer catch
-            } finally {
+            const daysCount = tripData.enrichedItinerary.days?.length || 0;
+            const hasHotel = !!tripData.enrichedItinerary.hotel;
+            const hasFlights = !!tripData.enrichedItinerary.flights?.length;
+            
+            // Calculate progress based on what's complete
+            let progress = 0;
+            let message = 'Generating itinerary...';
+            
+            if (daysCount > 0) progress += 50;
+            if (hasHotel) progress += 25;
+            if (hasFlights) progress += 25;
+            
+            if (daysCount > 0 && hasHotel && hasFlights) {
               setGeneratingItinerary(false);
-              setItineraryProgress(0);
+              setItineraryProgress(100);
               setItineraryMessage(undefined);
+              setIsItineraryComplete(true);
+              message = 'Itinerary complete!';
+            } else {
+              setGeneratingItinerary(true);
+              setItineraryProgress(progress);
+              setIsItineraryComplete(false);
+              
+              if (daysCount > 0) {
+                message = hasHotel ? 'Adding flight recommendations...' : 'Finding perfect hotels...';
+              } else {
+                message = 'Planning your days...';
+              }
+              setItineraryMessage(message);
             }
           }
-        } else {
-          console.log(`[TRIP PAGE] Trip already has enrichedItinerary, skipping generation`);
-        }
-      
-        console.log(`[TRIP PAGE] Step 3: Cleaning image URLs...`);
-        // Clean image URLs
-        if (tripData.enrichedItinerary) {
-          if (tripData.enrichedItinerary.hotel?.imageUrl?.includes('example.com')) {
+
+          // Convert Firestore Timestamp to ISO string
+          if (tripData.createdAt && typeof tripData.createdAt.toDate === 'function') {
+            tripData.createdAt = tripData.createdAt.toDate().toISOString() as any;
+          }
+
+          // Clean image URLs
+          if (tripData.enrichedItinerary) {
+            if (tripData.enrichedItinerary.hotel?.imageUrl?.includes('example.com')) {
               tripData.enrichedItinerary.hotel.imageUrl = undefined;
-          }
-          tripData.enrichedItinerary.days.forEach(day => {
-              day.activities.forEach(activity => {
-              if (activity.imageUrl?.includes('example.com')) {
+            }
+            tripData.enrichedItinerary.days?.forEach(day => {
+              day.activities?.forEach(activity => {
+                if (activity.imageUrl?.includes('example.com')) {
                   activity.imageUrl = undefined;
-              }
+                }
               });
-          });
-        }
-
-        console.log(`[TRIP PAGE] Step 4: Setting trip state...`);
-        console.log(`[TRIP PAGE] Flights data:`, tripData.enrichedItinerary?.flights);
-        console.log(`[TRIP PAGE] Flights length:`, tripData.enrichedItinerary?.flights?.length);
-        setTrip(tripData);
-
-        console.log(`[TRIP PAGE] Step 5: Getting collaborator details...`);
-        if (tripData.collaborators) {
-          console.log(`[TRIP PAGE] Collaborators array:`, tripData.collaborators);
-          try {
-            const collaboratorDetails = await getCollaboratorDetails(tripData.collaborators);
-            console.log(`[TRIP PAGE] Step 5 complete: getCollaboratorDetails returned`, collaboratorDetails.length, 'collaborators');
-            setCollaborators(collaboratorDetails);
-          } catch (e: unknown) {
-            const error = e as { code?: string; message?: string };
-            console.error(`[TRIP PAGE] ❌ Error in step 5 (getCollaboratorDetails):`, e);
-            console.error(`[TRIP PAGE] Error code:`, error?.code);
-            console.error(`[TRIP PAGE] Error message:`, error?.message);
-            // Don't throw - collaborator details are not critical
+            });
           }
-        } else {
-          console.log(`[TRIP PAGE] No collaborators to fetch`);
-        }
 
-        console.log(`[TRIP PAGE] Step 6: Checking for existing booking...`);
-        try {
-          const existingBooking = await getBookingByTripAndUserAction(tripId, user.uid);
-          if (existingBooking) {
-            console.log(`[TRIP PAGE] Found existing booking with ID:`, existingBooking.id);
-            setBooking(existingBooking);
-          } else {
-            console.log(`[TRIP PAGE] No existing booking found for this trip and user`);
-            setBooking(null);
+          // Update trip state (this will trigger UI re-render with new data)
+          setTrip(tripData);
+
+          // Fetch collaborator details if we have collaborators
+          if (tripData.collaborators && tripData.collaborators.length > 0) {
+            try {
+              const collaboratorDetails = await getCollaboratorDetails(tripData.collaborators);
+              setCollaborators(collaboratorDetails);
+            } catch (e: unknown) {
+              console.error(`[TRIP PAGE] Error fetching collaborator details:`, e);
+            }
           }
+
+          // Check for existing booking (only once on initial load)
+          if (!booking) {
+            try {
+              const existingBooking = await getBookingByTripAndUserAction(tripId, user.uid);
+              if (existingBooking) {
+                setBooking(existingBooking);
+              }
+            } catch (e: unknown) {
+              console.error(`[TRIP PAGE] Error checking for booking:`, e);
+            }
+          }
+
+          setLoading(false);
+          setError(null);
         } catch (e: unknown) {
           const error = e as { code?: string; message?: string };
-          console.error(`[TRIP PAGE] ❌ Error checking for booking:`, error);
-          // Don't throw - booking check is not critical for displaying trip
-          setBooking(null);
+          console.error(`[TRIP PAGE] ❌ Error in snapshot handler:`, e);
+          console.error(`[TRIP PAGE] Error code:`, error?.code);
+          console.error(`[TRIP PAGE] Error message:`, error?.message);
+          
+          // Handle permission errors specifically
+          if (error?.code === 'permission-denied' || error?.message?.includes('permission')) {
+            setError('You do not have permission to view this trip. Please ensure you are the owner or have been added as a collaborator.');
+          } else {
+            setError('Failed to load trip. Please try again later.');
+          }
+          setLoading(false);
         }
-
-        console.log(`[TRIP PAGE] ✅ All steps complete successfully`);
-        setLoading(false);
-      } catch (err: any) {
-        console.error('[TRIP PAGE] ❌ ERROR in fetchTripData:', err);
-        console.error('[TRIP PAGE] Error name:', err?.name);
-        console.error('[TRIP PAGE] Error code:', err?.code);
-        console.error('[TRIP PAGE] Error message:', err?.message);
-        console.error('[TRIP PAGE] Error stack:', err?.stack);
-        // Handle permission errors specifically
-        if (err?.code === 'permission-denied' || err?.message?.includes('permission')) {
-          setError('You do not have permission to view this trip. Please ensure you are the owner or have been added as a collaborator.');
+      },
+      (error: any) => {
+        // Snapshot error handler
+        console.error(`[TRIP PAGE] ❌ Snapshot error:`, error);
+        if (error.code === 'permission-denied') {
+          setError('You do not have permission to view this trip.');
         } else {
           setError('Failed to load trip. Please try again later.');
         }
         setLoading(false);
       }
+    );
+
+    // Cleanup listener on unmount
+    return () => {
+      console.log(`[TRIP PAGE] Cleaning up listener for trip ${tripId}`);
+      unsubscribe();
     };
+  }, [tripId, user?.uid, authLoading]);
 
-    fetchTripData();
-  }, [tripId, user, authLoading]);
-
-  if (authLoading || loading || generatingItinerary) {
+  // Show loader only on initial load or if we have no trip data yet
+  // Once we have partial data, show it even if generation is in progress
+  if (authLoading || (loading && !trip)) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-screen">
         <ItineraryLoader 
-          message={itineraryMessage}
+          message={itineraryMessage || 'Loading trip...'}
           progress={generatingItinerary ? itineraryProgress : undefined}
         />
       </div>
@@ -377,47 +347,56 @@ export default function TripPage({ params }: TripPageProps) {
         ))}
       </div>
 
-      <div className="container mx-auto max-w-7xl mt-8">
-          <div className="flex justify-between items-start">
-             <TripHighlights trip={{
-              destination: trip.destination,
-              startDate: trip.startDate,
-              endDate: trip.endDate,
-              budget: trip.budget,
-              interests: trip.interests,
-              collaborators: collaborators,
-            }} />
-            <div className="flex items-center gap-2">
+      <div className="container mx-auto max-w-7xl mt-8 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+             <div className="flex-1">
+               <TripHighlights trip={{
+                destination: trip.destination,
+                startDate: trip.startDate,
+                endDate: trip.endDate,
+                budget: trip.budget,
+                interests: trip.interests,
+                collaborators: collaborators,
+              }} />
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 lg:flex-col lg:items-stretch lg:gap-3">
               {booking ? (
                 <Button 
                   onClick={() => router.push(`/trips/${tripId}/booking/${booking.id}`)}
                   className="bg-primary hover:bg-primary/90"
                 >
-                  <Ticket className="mr-2 h-4 w-4" /> View Voucher
+                  <Ticket className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">View Voucher</span>
+                  <span className="sm:hidden">Voucher</span>
                 </Button>
               ) : (
                 <Button 
                   onClick={handleBookTrip} 
-                  disabled={isBooking || !trip.enrichedItinerary}
+                  disabled={isBooking || !isItineraryComplete}
                   className="bg-primary hover:bg-primary/90"
                 >
                   {isBooking ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Booking...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <span className="hidden sm:inline">Booking...</span>
+                      <span className="sm:hidden">...</span>
                     </>
                   ) : (
                     <>
-                      <CreditCard className="mr-2 h-4 w-4" /> Book Complete Trip
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      <span className="hidden sm:inline">Book Complete Trip</span>
+                      <span className="sm:hidden">Book Trip</span>
                     </>
                   )}
                 </Button>
               )}
               <ShareTripDialog tripId={trip.id} trip={trip}>
                 <Button variant="outline">
-                  <Share2 className="mr-2 h-4 w-4" /> Share
+                  <Share2 className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Share</span>
                 </Button>
               </ShareTripDialog>
-              <DeleteTripButton tripId={trip.id} />
+              <DeleteTripButton tripId={trip.id} disabled={!isItineraryComplete} />
             </div>
           </div>
           
@@ -459,8 +438,33 @@ export default function TripPage({ params }: TripPageProps) {
                  <h2 className="text-2xl sm:text-3xl font-bold font-headline">Your Itinerary</h2>
                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                    <span>{trip.enrichedItinerary?.days.length || 0} days planned</span>
+                   {generatingItinerary && (
+                     <span className="flex items-center gap-1 text-primary">
+                       <Loader2 className="h-3 w-3 animate-spin" />
+                       <span className="hidden sm:inline">Generating...</span>
+                     </span>
+                   )}
                  </div>
                </div>
+               {generatingItinerary && trip.enrichedItinerary && (
+                 <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 text-sm">
+                   <div className="flex items-center gap-2 mb-2">
+                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                     <span className="font-medium">{itineraryMessage || 'Generating itinerary...'}</span>
+                   </div>
+                   <div className="flex flex-wrap gap-4 mt-3 text-xs">
+                     <span className={trip.enrichedItinerary.days?.length ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                       {trip.enrichedItinerary.days?.length ? '✅ Days' : '⏳ Days'}
+                     </span>
+                     <span className={trip.enrichedItinerary.hotel ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                       {trip.enrichedItinerary.hotel ? '✅ Hotel' : '⏳ Hotel'}
+                     </span>
+                     <span className={trip.enrichedItinerary.flights?.length ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                       {trip.enrichedItinerary.flights?.length ? '✅ Flights' : '⏳ Flights'}
+                     </span>
+                   </div>
+                 </div>
+               )}
                <div className="w-full">
                  <FlightRecommendations flights={trip.enrichedItinerary?.flights} />
                </div>

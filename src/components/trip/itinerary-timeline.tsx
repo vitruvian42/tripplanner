@@ -128,8 +128,8 @@ const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary, destin
     return (
       <Card>
         <CardContent className="p-6 text-center text-muted-foreground">
-          <p>Itinerary details are being generated or are not available.</p>
-          <p className="text-sm">Please check back in a moment.</p>
+          <p>Planning your perfect itinerary...</p>
+          <p className="text-sm mt-2">This may take a few moments</p>
         </CardContent>
       </Card>
     );
@@ -141,14 +141,18 @@ const ItineraryTimeline: React.FC<ItineraryTimelineProps> = ({ itinerary, destin
         <div key={index}>
            <h3 className="font-headline text-2xl font-bold mb-4">Day {day.day}: {day.title}</h3>
             <div className="space-y-2">
-              {day.activities.map((activity, actIndex) => (
-                <ActivityCard 
-                  key={actIndex} 
-                  activity={activity} 
-                  isLast={actIndex === day.activities.length - 1} 
-                  destination={destination}
-                />
-              ))}
+              {day.activities && day.activities.length > 0 ? (
+                day.activities.map((activity, actIndex) => (
+                  <ActivityCard 
+                    key={actIndex} 
+                    activity={activity} 
+                    isLast={actIndex === day.activities.length - 1} 
+                    destination={destination}
+                  />
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Activities for this day are being generated...</p>
+              )}
             </div>
         </div>
       ))}

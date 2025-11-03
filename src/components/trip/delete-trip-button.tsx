@@ -10,9 +10,10 @@ import { deleteTripAction } from '@/lib/actions/trips';
 
 type DeleteTripButtonProps = {
   tripId: string;
+  disabled?: boolean;
 };
 
-export function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
+export function DeleteTripButton({ tripId, disabled = false }: DeleteTripButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -32,9 +33,10 @@ export function DeleteTripButton({ tripId }: DeleteTripButtonProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" disabled={isDeleting}>
+        <Button variant="destructive" disabled={isDeleting || disabled}>
           {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-          Delete Trip
+          <span className="hidden sm:inline">Delete Trip</span>
+          <span className="sm:hidden">Delete</span>
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
