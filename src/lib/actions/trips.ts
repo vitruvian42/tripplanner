@@ -133,34 +133,233 @@ async function generateItineraryAsync(
   }
   
   try {
-    console.log('[ASYNC] Starting itinerary generation for trip:', tripId);
-    
-    // Generate itinerary using progressive flow
-    const generatedEnrichedItinerary = await generateItineraryFull(tripData);
-    
-    console.log('[ASYNC] Successfully generated itinerary for trip:', tripId);
-    
-    // Update trip with generated itinerary
+    console.log('[ASYNC] Starting progressive itinerary generation for trip:', tripId);
     const tripRef = db.collection('trips').doc(tripId);
     
-    // Update with itinerary and potentially better image
-    const updateData: any = {
-      enrichedItinerary: generatedEnrichedItinerary,
-      itinerary: JSON.stringify(generatedEnrichedItinerary), // Store as JSON string for backward compatibility
+    // Import the AI module to access prompts directly
+    const { ai } = await import('@/ai/genkit');
+    const { googleAI } = await import('@genkit-ai/googleai');
+    const { z } = await import('genkit');
+    
+    // Calculate dayCount
+    const dayCount = Math.ceil(
+      (new Date(tripData.endDate).getTime() - new Date(tripData.startDate).getTime()) / (1000 * 60 * 60 * 24)
+    ) + 1;
+    
+    // Initialize partial itinerary structure
+    let partialItinerary: any = {
+      days: [],
+      flights: [],
     };
     
-    // Update image if we got a good one from the itinerary
-    if (generatedEnrichedItinerary.hotel?.imageUrl || generatedEnrichedItinerary.days[0]?.activities[0]?.imageUrl) {
-      // Keep existing imageId for now, we could update it if needed
-    }
+    // Initialize empty structure in Firestore (this triggers UI update)
+    await tripRef.update({ enrichedItinerary: partialItinerary });
+    console.log('[ASYNC] Initialized empty itinerary structure');
     
-    await tripRef.update(updateData);
+    // Define schemas inline (matching the progressive file)
+    const LocationSchema = z.object({
+      lat: z.number(),
+      lng: z.number(),
+      address: z.string(),
+    });
     
-    console.log('[ASYNC] Successfully updated trip', tripId, 'with itinerary');
+    const EnrichedActivitySchema = z.object({
+      title: z.string(),
+      description: z.string(),
+      link: z.string().optional(),
+      imageUrl: z.string().optional(),
+      location: LocationSchema.optional(),
+      keynotes: z.array(z.string()).optional(),
+      waysToReach: z.array(z.string()).optional(),
+      thingsToDo: z.array(z.string()).optional(),
+    });
     
-    // Note: revalidatePath cannot be called from async background functions
-    // The trip page will automatically show updated data when user refreshes or navigates
-    // Client-side navigation will handle cache updates
+    const EnrichedDaySchema = z.object({
+      day: z.number(),
+      title: z.string(),
+      activities: z.array(EnrichedActivitySchema),
+    });
+    
+    const HotelSchema = z.object({
+      name: z.string(),
+      description: z.string(),
+      imageUrl: z.string().optional(),
+      location: LocationSchema,
+    });
+    
+    const FlightRecommendationSchema = z.object({
+      type: z.enum(['roundTrip', 'internal']),
+      route: z.string(),
+      description: z.string(),
+      estimatedCost: z.string().optional(),
+      bestTimeToBook: z.string().optional(),
+      airlines: z.array(z.string()).optional(),
+    });
+    
+    // Create prompts inline
+    const daysPrompt = ai.definePrompt({
+      name: 'daysPromptIncremental',
+      input: {schema: z.object({
+        startingPoint: z.string(),
+        destination: z.string(),
+        startDate: z.string(),
+        endDate: z.string(),
+        interests: z.string(),
+        budget: z.string(),
+        dayCount: z.number(),
+      })},
+      output: {schema: z.object({days: z.array(EnrichedDaySchema)})},
+      model: googleAI.model('gemini-2.5-flash'),
+      prompt: `Generate a detailed day-by-day itinerary. 
+
+Starting Point: {{{startingPoint}}}
+Destination: {{{destination}}}
+Start Date: {{{startDate}}}
+End Date: {{{endDate}}}
+Interests: {{{interests}}}
+Budget: {{{budget}}}
+Day Count: {{{dayCount}}}
+
+For each day, provide:
+- day: day number (1, 2, 3, etc.)
+- title: brief title for the day
+- activities: array of activities with:
+  - title: activity name
+  - description: detailed description
+  - link: optional URL
+  - imageUrl: optional real image URL (if available)
+  - location: {lat, lng, address} if available
+  - keynotes: optional array of key points
+  - waysToReach: optional array of transportation options
+  - thingsToDo: optional array of specific things to do
+
+Generate exactly {{{dayCount}}} days. Make it comprehensive and detailed.`,
+    });
+    
+    const hotelPrompt = ai.definePrompt({
+      name: 'hotelPromptIncremental',
+      input: {schema: z.object({
+        destination: z.string(),
+        budget: z.string(),
+        startDate: z.string(),
+        endDate: z.string(),
+      })},
+      output: {schema: z.object({hotel: HotelSchema.optional()})},
+      model: googleAI.model('gemini-2.5-flash'),
+      prompt: `Recommend the best hotel for this trip.
+
+Destination: {{{destination}}}
+Budget: {{{budget}}}
+Start Date: {{{startDate}}}
+End Date: {{{endDate}}}
+
+Provide:
+- name: hotel name
+- description: detailed description
+- imageUrl: real image URL if available (omit if not)
+- location: {lat, lng, address}
+
+Match the budget level (budget/moderate/luxury).`,
+    });
+    
+    const flightsPrompt = ai.definePrompt({
+      name: 'flightsPromptIncremental',
+      input: {schema: z.object({
+        startingPoint: z.string(),
+        destination: z.string(),
+        startDate: z.string(),
+        endDate: z.string(),
+        budget: z.string(),
+      })},
+      output: {schema: z.object({flights: z.array(FlightRecommendationSchema)})},
+      model: googleAI.model('gemini-2.5-flash'),
+      prompt: `Generate flight recommendations.
+
+Starting Point: {{{startingPoint}}}
+Destination: {{{destination}}}
+Start Date: {{{startDate}}}
+End Date: {{{endDate}}}
+Budget: {{{budget}}}
+
+ALWAYS include:
+1. A roundTrip flight from {{{startingPoint}}} to {{{destination}}} and back
+
+Optionally include internal flights if the destination is large (e.g., India, USA, Europe) and internal flights would save significant time.
+
+For each flight provide:
+- type: 'roundTrip' or 'internal'
+- route: description (e.g., "New York to Paris")
+- description: detailed recommendations
+- estimatedCost: cost range based on budget
+- bestTimeToBook: when to book
+- airlines: array of recommended airlines`,
+    });
+    
+    // Generate all in parallel, but update Firestore as each completes
+    const daysPromise = daysPrompt({
+      startingPoint: tripData.startingPoint || tripData.destination,
+      destination: tripData.destination,
+      startDate: tripData.startDate,
+      endDate: tripData.endDate,
+      interests: tripData.interests,
+      budget: tripData.budget,
+      dayCount,
+    }).then(async (result) => {
+      if (result.output?.days) {
+        partialItinerary.days = result.output.days;
+        await tripRef.update({ enrichedItinerary: partialItinerary });
+        console.log('[ASYNC] ✅ Updated days in itinerary');
+      }
+      return result.output?.days;
+    }).catch((error: any) => {
+      console.error('[ASYNC] Error generating days:', error);
+      return null;
+    });
+    
+    const hotelPromise = hotelPrompt({
+      destination: tripData.destination,
+      budget: tripData.budget,
+      startDate: tripData.startDate,
+      endDate: tripData.endDate,
+    }).then(async (result) => {
+      if (result.output?.hotel) {
+        partialItinerary.hotel = result.output.hotel;
+        await tripRef.update({ enrichedItinerary: partialItinerary });
+        console.log('[ASYNC] ✅ Updated hotel in itinerary');
+      }
+      return result.output?.hotel;
+    }).catch((error: any) => {
+      console.error('[ASYNC] Error generating hotel:', error);
+      return null;
+    });
+    
+    const flightsPromise = flightsPrompt({
+      startingPoint: tripData.startingPoint || tripData.destination,
+      destination: tripData.destination,
+      startDate: tripData.startDate,
+      endDate: tripData.endDate,
+      budget: tripData.budget,
+    }).then(async (result) => {
+      if (result.output?.flights) {
+        partialItinerary.flights = result.output.flights;
+        await tripRef.update({ enrichedItinerary: partialItinerary });
+        console.log('[ASYNC] ✅ Updated flights in itinerary');
+      }
+      return result.output?.flights;
+    }).catch((error: any) => {
+      console.error('[ASYNC] Error generating flights:', error);
+      return null;
+    });
+    
+    // Wait for all to complete
+    await Promise.all([daysPromise, hotelPromise, flightsPromise]);
+    
+    // Final update with complete itinerary and JSON string for backward compatibility
+    await tripRef.update({
+      itinerary: JSON.stringify(partialItinerary),
+    });
+    
+    console.log('[ASYNC] ✅ Successfully completed progressive itinerary generation for trip', tripId);
     
   } catch (error: any) {
     console.error('[ASYNC] Error generating itinerary for trip', tripId, ':', error);
