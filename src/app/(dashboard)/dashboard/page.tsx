@@ -11,14 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PlusCircle, Loader2, Calendar, MapPin, Users, DollarSign, Sparkles } from 'lucide-react';
 import { CreateTripDialog } from '@/components/dashboard/create-trip-dialog';
 import Link from 'next/link';
-import { placeholderImageById, defaultPlaceholderImage, getRelevantPlaceholderImage } from '@/lib/placeholder-images';
+import { getTripCardImageUrl } from '@/lib/image-service';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import { ClientOnly } from '@/components/ui/client-only';
 import { Badge } from '@/components/ui/badge';
 
 const TripCard = ({ trip }: { trip: Trip }) => {
-    // Use real high-definition image for the destination
-    const imageInfo = getRelevantPlaceholderImage(trip.destination);
+    // Use Gemini-generated image for the destination
+    const imageUrl = getTripCardImageUrl(trip.destination);
     const startDate = new Date(trip.startDate);
     const endDate = new Date(trip.endDate);
     const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -29,9 +29,9 @@ const TripCard = ({ trip }: { trip: Trip }) => {
                 <CardHeader className="p-0">
                     <div className="aspect-[4/3] relative overflow-hidden">
                         <ImageWithFallback
-                            src={imageInfo.imageUrl}
+                            src={imageUrl}
                             alt={trip.destination}
-                            data-ai-hint={imageInfo.imageHint}
+                            fallbackQuery={trip.destination}
                             fill
                             className="group-hover:scale-105 transition-transform duration-500"
                         />

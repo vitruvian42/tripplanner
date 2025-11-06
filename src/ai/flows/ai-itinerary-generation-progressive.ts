@@ -155,7 +155,7 @@ const daysPrompt = ai.definePrompt({
   input: {schema: DaysInputSchema},
   output: {schema: z.object({days: z.array(EnrichedDaySchema)})},
   model: googleAI.model('gemini-2.5-flash'),
-  prompt: `Generate a detailed day-by-day itinerary. 
+  prompt: `Generate a detailed day-by-day itinerary with comprehensive descriptions. 
 
 Starting Point: {{{startingPoint}}}
 Destination: {{{destination}}}
@@ -170,13 +170,21 @@ For each day, provide:
 - title: brief title for the day
 - activities: array of activities with:
   - title: activity name
-  - description: detailed description
+  - description: COMPREHENSIVE description (minimum 4-5 sentences). Include:
+    * What the activity entails in detail
+    * What to expect during the experience
+    * Practical information (timing, duration, what to bring/wear)
+    * Why this activity is recommended for this specific trip
+    * Any tips, insider information, or special considerations
+    * What makes it special or unique
   - link: optional URL
   - imageUrl: optional real image URL (if available)
   - location: {lat, lng, address} if available
   - keynotes: optional array of key points
   - waysToReach: optional array of transportation options
   - thingsToDo: optional array of specific things to do
+
+IMPORTANT: Each activity description must be comprehensive (4-5 sentences minimum), providing rich details about the experience, practical information, and context. Write as if you're a knowledgeable travel guide helping someone fully understand what they'll experience.
 
 Generate exactly {{{dayCount}}} days. Make it comprehensive and detailed.`,
 });
@@ -187,7 +195,7 @@ const hotelPrompt = ai.definePrompt({
   input: {schema: HotelInputSchema},
   output: {schema: z.object({hotel: HotelSchema.optional()})},
   model: googleAI.model('gemini-2.5-flash'),
-  prompt: `Recommend the best hotel for this trip.
+  prompt: `Recommend the best hotel for this trip with comprehensive details.
 
 Destination: {{{destination}}}
 Budget: {{{budget}}}
@@ -196,11 +204,17 @@ End Date: {{{endDate}}}
 
 Provide:
 - name: hotel name
-- description: detailed description
+- description: COMPREHENSIVE description (minimum 4-5 sentences). Include:
+  * Hotel features, amenities, and services
+  * Room quality and facilities
+  * Location advantages and nearby attractions
+  * Dining options and special services
+  * What makes it suitable for this budget level
+  * Why it's recommended for this specific trip
 - imageUrl: real image URL if available (omit if not)
 - location: {lat, lng, address}
 
-Match the budget level (budget/moderate/luxury).`,
+Match the budget level (budget/moderate/luxury). Write detailed, informative descriptions that help travelers understand exactly what they can expect.`,
 });
 
 // Flights generation prompt
@@ -209,7 +223,7 @@ const flightsPrompt = ai.definePrompt({
   input: {schema: FlightsInputSchema},
   output: {schema: z.object({flights: z.array(FlightRecommendationSchema)})},
   model: googleAI.model('gemini-2.5-flash'),
-  prompt: `Generate flight recommendations.
+  prompt: `Generate comprehensive flight recommendations with detailed descriptions.
 
 Starting Point: {{{startingPoint}}}
 Destination: {{{destination}}}
@@ -225,10 +239,19 @@ Optionally include internal flights if the destination is large (e.g., India, US
 For each flight provide:
 - type: 'roundTrip' or 'internal'
 - route: description (e.g., "New York to Paris")
-- description: detailed recommendations
+- description: COMPREHENSIVE recommendations (minimum 4-5 sentences). Include:
+  * Flight duration and typical routes
+  * Best airlines and service classes for this budget
+  * Airport information and terminal details
+  * Layover considerations if applicable
+  * Tips for booking and getting the best deals
+  * What to expect during the flight experience
+  * Baggage allowances and policies
 - estimatedCost: cost range based on budget
-- bestTimeToBook: when to book
-- airlines: array of recommended airlines`,
+- bestTimeToBook: when to book (specific timeframes)
+- airlines: array of recommended airlines
+
+Write detailed, informative descriptions that help travelers understand their flight options completely.`,
 });
 
 /**

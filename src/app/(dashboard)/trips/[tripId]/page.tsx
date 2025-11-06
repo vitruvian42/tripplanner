@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 
-import { placeholderImageById, defaultPlaceholderImage, getDestinationImage } from '@/lib/placeholder-images';
-import { getDestinationGalleryImages, getActivityImageUrl, getHotelImageUrl } from '@/lib/image-service';
+import { getDestinationImage, getDestinationGalleryImages, getActivityImageUrl, getHotelImageUrl } from '@/lib/image-service';
 import ItineraryTimeline from '@/components/trip/itinerary-timeline';
 import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { generateItineraryProgressive } from '@/ai/flows/ai-itinerary-generation-progressive';
@@ -239,8 +238,7 @@ export default function TripPage({ params }: TripPageProps) {
     return null;
   }
 
-  const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
-  // Generate high-definition gallery images for the destination
+  // Generate Gemini images for the destination
   const galleryImages = getDestinationGalleryImages(trip.destination, 5).map((url, index) => ({
     id: `${trip.destination}-${index}`,
     description: `${trip.destination} image ${index + 1}`,
@@ -315,6 +313,7 @@ export default function TripPage({ params }: TripPageProps) {
                   : getDestinationImage(trip.destination)
               }
               alt={`Main image for ${trip.destination}`}
+              fallbackQuery={trip.destination}
               fill
               className="object-cover rounded-xl md:rounded-l-xl md:rounded-tr-none md:rounded-br-none"
           />
@@ -330,6 +329,7 @@ export default function TripPage({ params }: TripPageProps) {
               <ImageWithFallback
                 src={activityImageUrl}
                 alt={activity.title}
+                fallbackQuery={`${activity.title} ${trip.destination}`}
                 fill
                 className={`object-cover ${index === 1 ? '' : index === 2 ? 'rounded-tr-xl' : index === 3 ? '' : 'rounded-br-xl'}`}
               />
@@ -340,6 +340,7 @@ export default function TripPage({ params }: TripPageProps) {
             <ImageWithFallback
               src={image.imageUrl}
               alt={`Image ${index + 1} for ${trip.destination}`}
+              fallbackQuery={trip.destination}
               fill
               className={`object-cover ${index === 1 ? '' : index === 2 ? 'rounded-tr-xl' : index === 3 ? '' : 'rounded-br-xl'}`}
             />
