@@ -10,22 +10,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Loader2 } from 'lucide-react';
 
 import Link from 'next/link';
-import { placeholderImageById, defaultPlaceholderImage, getRelevantPlaceholderImage } from '@/lib/placeholder-images';
+import { getTripCardImageUrl } from '@/lib/image-service';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 import { ClientOnly } from '@/components/ui/client-only';
 
 const TripCard = ({ trip }: { trip: Trip }) => {
-    // Use real high-definition image for the destination
-    const imageInfo = getRelevantPlaceholderImage(trip.destination);
+    // Use Gemini-generated image for the destination
+    const imageUrl = getTripCardImageUrl(trip.destination);
     return (
         <Card key={trip.id} className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
             <Link href={`/trips/${trip.id}`} className="block">
                 <CardHeader className="p-0">
                     <div className="aspect-[4/3] relative">
                         <ImageWithFallback
-                            src={imageInfo.imageUrl}
+                            src={imageUrl}
                             alt={trip.destination}
-                            data-ai-hint={imageInfo.imageHint}
+                            fallbackQuery={trip.destination}
                             fill
                             className="object-cover"
                         />

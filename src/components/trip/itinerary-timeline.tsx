@@ -44,10 +44,22 @@ const getIconForActivity = (activityTitle: string) => {
 
 
 const ActivityCard: React.FC<{ activity: EnrichedActivity; isLast: boolean; destination?: string }> = ({ activity, isLast, destination }) => {
-  // Use real image URL with proper aspect ratio, fallback to generated URL if available
-  const activityImageUrl = activity.imageUrl && !activity.imageUrl.includes('example.com')
+  // Generate multiple image URLs for the activity (main image + 2-3 additional images)
+  const mainImageUrl = activity.imageUrl && !activity.imageUrl.includes('example.com')
     ? activity.imageUrl
     : getActivityImageUrl(activity.title, destination);
+  
+  // Generate additional images with different queries for variety
+  const additionalImageQueries = [
+    `${activity.title} ${destination || ''}`.trim(),
+    `${activity.title} interior ${destination || ''}`.trim(),
+    `${activity.title} view ${destination || ''}`.trim(),
+  ];
+  
+  const allImages = [
+    mainImageUrl,
+    ...additionalImageQueries.slice(1, 3).map(query => getActivityImageUrl(query, destination))
+  ];
 
   return (
     <div className="relative pl-10">
@@ -61,14 +73,49 @@ const ActivityCard: React.FC<{ activity: EnrichedActivity; isLast: boolean; dest
 
       <div className='pb-10 ml-4'>
         <h4 className="font-semibold text-lg font-headline">{activity.title}</h4>
-        <div className="relative w-full h-64 mt-3 rounded-md overflow-hidden">
-          <ImageWithFallback
-            src={activityImageUrl}
-            alt={activity.title}
-            fill
-            className="object-cover"
-          />
+        
+        {/* Grid layout with 3 images - masonry style, 70% of original space (280px vs ~400px original) */}
+        <div 
+          className="grid grid-cols-3 gap-2 mt-3" 
+          style={{ 
+            gridTemplateRows: 'repeat(2, 1fr)',
+            height: '280px'
+          }}
+        >
+          {/* Main image - large, spans 2x2 (left side) */}
+          <div className="relative col-span-2 row-span-2 rounded-md overflow-hidden">
+            <ImageWithFallback
+              src={allImages[0]}
+              alt={activity.title}
+              fallbackQuery={destination ? `${activity.title} ${destination}` : activity.title}
+              fill
+              className="object-cover"
+            />
+          </div>
+          
+          {/* Top right - small square */}
+          <div className="relative col-span-1 row-span-1 rounded-md overflow-hidden">
+            <ImageWithFallback
+              src={allImages[1] || allImages[0]}
+              alt={`${activity.title} view 1`}
+              fallbackQuery={destination ? `${activity.title} ${destination}` : activity.title}
+              fill
+              className="object-cover"
+            />
+          </div>
+          
+          {/* Bottom right - small square */}
+          <div className="relative col-span-1 row-span-1 rounded-md overflow-hidden">
+            <ImageWithFallback
+              src={allImages[2] || allImages[0]}
+              alt={`${activity.title} view 2`}
+              fallbackQuery={destination ? `${activity.title} ${destination}` : activity.title}
+              fill
+              className="object-cover"
+            />
+          </div>
         </div>
+        
         <p className="text-sm text-muted-foreground mt-3">{activity.description}</p>
         {activity.link && (
             <Link href={activity.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm text-primary hover:underline mt-3 font-medium">

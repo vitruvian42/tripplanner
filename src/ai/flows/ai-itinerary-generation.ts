@@ -104,14 +104,14 @@ interface Location {
 
 interface Hotel {
   name: string;
-  description: string;
+  description: string; // COMPREHENSIVE description (minimum 4-5 sentences) including features, amenities, location advantages, dining options, and why it's recommended
   imageUrl?: string;
   location: Location;
 }
 
 interface EnrichedActivity {
   title: string;
-  description: string;
+  description: string; // COMPREHENSIVE description (minimum 4-5 sentences) with rich details about the experience, practical information, timing, what to expect, and why it's recommended
   link?: string;
   imageUrl?: string; // URL for an image related to the activity
   location?: Location; // Precise location data (latitude, longitude, address)
@@ -129,7 +129,7 @@ interface EnrichedDay {
 interface FlightRecommendation {
   type: 'roundTrip' | 'internal'; // 'roundTrip' for origin-destination round trip, 'internal' for flights within destination
   route: string; // e.g., "New York to Paris" or "Paris to Nice"
-  description: string; // Description and recommendations for this flight route
+  description: string; // COMPREHENSIVE description (minimum 4-5 sentences) including flight duration, airlines, airport info, booking tips, and what to expect
   estimatedCost?: string; // Estimated cost range
   bestTimeToBook?: string; // Best time to book this flight
   airlines?: string[]; // Recommended airlines for this route
@@ -151,6 +151,13 @@ IMPORTANT FLIGHT RECOMMENDATIONS:
    - Best time to book
    - Recommended airlines
    - Tips for getting the best deals
+
+IMPORTANT: Write comprehensive descriptions for all activities, hotels, and flights:
+- Activity descriptions: Minimum 4-5 sentences with rich details about what the experience entails, what to expect, practical information (timing, duration, what to bring/wear), why it's recommended, tips, and what makes it special.
+- Hotel descriptions: Minimum 4-5 sentences covering features, amenities, room quality, location advantages, dining options, and why it's suitable for this budget.
+- Flight descriptions: Minimum 4-5 sentences including flight duration, best airlines, airport information, layover considerations, booking tips, and what to expect.
+
+Write as if you're a knowledgeable travel guide helping someone fully understand their trip. Be detailed, informative, and practical.
 
 Ensure that for each activity, if you can find a real, publicly accessible image URL, provide it. Otherwise, omit the 'imageUrl' field. Provide precise latitude, longitude, and address. For the hotel, if you can find a real, publicly accessible image URL, provide it. Otherwise, omit the 'imageUrl' field. Also provide its name, description, and location.
 `,

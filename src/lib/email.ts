@@ -1,7 +1,7 @@
 
 import { Resend } from 'resend';
 import type { Trip } from './types';
-import { placeholderImageById, defaultPlaceholderImage } from './placeholder-images';
+import { getDestinationImage } from './image-service';
 
 // NOTE: This assumes you have set RESEND_API_KEY in your .env.local file
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -84,7 +84,8 @@ export async function sendWelcomeEmail({ name, email }: WelcomeEmailParams) {
  */
 export async function sendTripInviteEmail({ name, email, trip }: TripInviteEmailParams) {
   const subject = `You're invited to plan a trip to ${trip.destination}!`;
-  const imageInfo = (trip.imageId && placeholderImageById[trip.imageId]) || defaultPlaceholderImage;
+  // Use Gemini-generated image for the destination
+  const destinationImageUrl = getDestinationImage(trip.destination);
 
   const html = `
     <!DOCTYPE html>
@@ -96,7 +97,7 @@ export async function sendTripInviteEmail({ name, email, trip }: TripInviteEmail
       <style>
         body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background-color: #f4f4f7; color: #333; }
         .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .header-image { width: 100%; height: 250px; background-image: url('${imageInfo.imageUrl.replace('/600/400', '/800/500')}'); background-size: cover; background-position: center; }
+        .header-image { width: 100%; height: 250px; background-image: url('${destinationImageUrl}'); background-size: cover; background-position: center; }
         .content { padding: 40px; }
         .content h1 { font-size: 28px; margin-top: 0; color: #333; }
         .content p { font-size: 16px; line-height: 1.6; }

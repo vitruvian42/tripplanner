@@ -5,7 +5,6 @@ import { generateItinerary } from '@/ai/flows/ai-itinerary-generation';
 import { generateItineraryFull } from '@/ai/flows/ai-itinerary-generation-progressive';
 
 import { revalidatePath } from 'next/cache';
-import { placeholderImages } from '@/lib/placeholder-images';
 import { randomUUID } from 'crypto';
 import type { Expense, Trip, Booking, FlightBooking, HotelBooking, ActivityBooking } from '@/lib/types';
 import { sendTripInviteEmail, sendWelcomeEmail } from '@/lib/email';
@@ -55,14 +54,8 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
   }
 
   try {
-    // 1. Select a placeholder image
-    const destinationHash = tripData.destination
-      .split('')
-      .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const imageIndex = destinationHash % placeholderImages.length;
-    const selectedImage = placeholderImages[imageIndex];
-    
-    // 2. Save trip to Firestore immediately (without itinerary)
+    // Save trip to Firestore immediately (without itinerary)
+    // Images will be generated on-demand using Gemini when displayed
     // The itinerary will be generated asynchronously in the background
     console.log('[ACTION] Creating trip document immediately...');
     const tripPayload = {
@@ -71,7 +64,6 @@ export async function createTripAction({ tripData, userId }: CreateTripParams): 
       ownerId: userId,
       collaborators: [userId],
       createdAt: FieldValue.serverTimestamp(),
-      imageId: selectedImage.id,
       expenses: [],
       // enrichedItinerary will be added when generated
     };

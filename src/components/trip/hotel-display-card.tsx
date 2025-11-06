@@ -6,7 +6,6 @@ import { Hotel, Location } from '@/lib/types';
 
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
-import { defaultPlaceholderImage } from '@/lib/placeholder-images';
 import { getHotelImageUrl } from '@/lib/image-service';
 import { ImageWithFallback } from '@/components/ui/image-with-fallback';
 
@@ -38,7 +37,7 @@ export function HotelDisplayCard({ hotel, destination }: HotelDisplayCardProps) 
             alt={hotel.name}
             fill
             className="object-cover"
-            fallbackSrc={defaultPlaceholderImage.imageUrl}
+            fallbackQuery={destination ? `${hotel.name} ${destination}` : hotel.name}
           />
         </div>
         {hotel.location && (
