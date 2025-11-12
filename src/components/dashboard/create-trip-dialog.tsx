@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,6 +49,21 @@ export function CreateTripDialog({ isOpen, onOpenChange }: CreateTripDialogProps
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Detect mobile devices, especially iOS
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+      const isMobileDevice = window.innerWidth < 768 || isIOS;
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -139,42 +154,90 @@ export function CreateTripDialog({ isOpen, onOpenChange }: CreateTripDialogProps
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Trip Dates</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value?.from && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value?.from ? (
-                            field.value.to ? (
-                              <>
-                                {format(field.value.from, 'LLL dd, y')} - {format(field.value.to, 'LLL dd, y')}
-                              </>
+                  {isMobile ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <FormLabel className="text-sm font-normal text-muted-foreground">Start Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            className="w-full"
+                            min={new Date().toISOString().split('T')[0]}
+                            value={field.value?.from ? format(field.value.from, 'yyyy-MM-dd') : ''}
+                            onChange={(e) => {
+                              const dateStr = e.target.value;
+                              const date = dateStr ? new Date(dateStr + 'T00:00:00') : undefined;
+                              field.onChange({
+                                from: date,
+                                to: field.value?.to,
+                              });
+                            }}
+                          />
+                        </FormControl>
+                      </div>
+                      <div className="space-y-1.5">
+                        <FormLabel className="text-sm font-normal text-muted-foreground">End Date</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            className="w-full"
+                            min={
+                              field.value?.from
+                                ? format(field.value.from, 'yyyy-MM-dd')
+                                : new Date().toISOString().split('T')[0]
+                            }
+                            value={field.value?.to ? format(field.value.to, 'yyyy-MM-dd') : ''}
+                            onChange={(e) => {
+                              const dateStr = e.target.value;
+                              const date = dateStr ? new Date(dateStr + 'T00:00:00') : undefined;
+                              field.onChange({
+                                from: field.value?.from,
+                                to: date,
+                              });
+                            }}
+                          />
+                        </FormControl>
+                      </div>
+                    </div>
+                  ) : (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={'outline'}
+                            className={cn(
+                              'w-full pl-3 text-left font-normal',
+                              !field.value?.from && 'text-muted-foreground'
+                            )}
+                            type="button"
+                          >
+                            {field.value?.from ? (
+                              field.value.to ? (
+                                <>
+                                  {format(field.value.from, 'LLL dd, y')} - {format(field.value.to, 'LLL dd, y')}
+                                </>
+                              ) : (
+                                format(field.value.from, 'LLL dd, y')
+                              )
                             ) : (
-                              format(field.value.from, 'LLL dd, y')
-                            )
-                          ) : (
-                            <span>Pick a date range</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="range"
-                        selected={{ from: field.value?.from, to: field.value?.to }}
-                        onSelect={field.onChange}
-                        numberOfMonths={2}
-                        disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                              <span>Pick a date range</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="range"
+                          selected={{ from: field.value?.from, to: field.value?.to }}
+                          onSelect={field.onChange}
+                          numberOfMonths={2}
+                          disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

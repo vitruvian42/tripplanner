@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, type UserCredential } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, type UserCredential } from 'firebase/auth';
 import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,7 +15,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/ui/logo';
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { ClientOnly } from '@/components/ui/client-only';
 
@@ -49,7 +50,14 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    // If not loading and user is logged in, redirect to dashboard
+    if (!loading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, loading, router]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,7 +71,7 @@ export default function SignupPage() {
     if (!credential) return;
     toast({
       title: 'Account Created',
-              description: "Welcome to Trippy! You're being redirected to your dashboard.",
+      description: "Welcome to Trippy! You're being redirected to your dashboard.",
     });
     router.replace('/dashboard');
   }
@@ -99,23 +107,45 @@ export default function SignupPage() {
     if (!auth) return;
     setIsLoading(true);
     try {
-        const provider = new GoogleAuthProvider();
-        await signInWithRedirect(auth, provider);
+      const provider = new GoogleAuthProvider();
+      const credential = await signInWithPopup(auth, provider);
+      // Google OAuth will create a new account if one doesn't exist, or sign in if it does
+      // Check if it's a new user or existing user
+      const isNewUser = credential.user.metadata.creationTime === credential.user.metadata.lastSignInTime;
+      if (isNewUser) {
+        toast({
+          title: 'Account Created',
+          description: "Welcome to Trippy! You're being redirected to your dashboard.",
+        });
+      } else {
+        toast({
+          title: 'Welcome Back',
+          description: "You're being redirected to your dashboard.",
+        });
+      }
+      router.replace('/dashboard');
     } catch (error: any) {
-        if (error.code === 'auth/operation-not-allowed') {
-            toast({
-                variant: 'destructive',
-                title: 'Signup Method Disabled',
-                description: 'Google Sign-In is not enabled. Please enable it in your Firebase project settings.',
-            });
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Signup Failed',
-                description: error.message || 'An unknown error occurred with Google Sign-In.',
-            });
-        }
-        setIsLoading(false);
+      if (error.code === 'auth/operation-not-allowed') {
+        toast({
+          variant: 'destructive',
+          title: 'Signup Method Disabled',
+          description: 'Google Sign-In is not enabled. Please enable it in your Firebase project settings.',
+        });
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, don't show an error
+        toast({
+          title: 'Signup Cancelled',
+          description: 'You closed the sign-in window. Please try again if you want to continue.',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Signup Failed',
+          description: error.message || 'An unknown error occurred with Google Sign-In.',
+        });
+      }
+    } finally {
+      setIsLoading(false);
     }
   }
 

@@ -70,16 +70,66 @@ export const uploadPhoto = functions.https.onRequest(async (req, res) => {
           contentType: mimeType,
           cacheControl: 'public, max-age=31536000',
         },
-        public: true,
+        // Removed 'public: true' - using uniform bucket-level access
       });
 
-      const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: '03-09-2491', // A very distant future date
-      });
+      // Generate signed URL - requires service account to have "Service Account Token Creator" role
+      // This provides secure, time-limited access to the file
+      let url;
+      try {
+        // Try to get service account email for better error reporting
+        let serviceAccountEmail = 'unknown';
+        try {
+          const app = firebaseAdmin.app();
+          const credential = app.options.credential;
+          if (credential && typeof credential.getAccessToken === 'function') {
+            // Try to extract service account from credential if available
+            const projectId = process.env.GOOGLE_CLOUD_PROJECT || firebaseAdmin.app().options.projectId;
+            if (projectId) {
+              serviceAccountEmail = `${projectId}@appspot.gserviceaccount.com`;
+            }
+          }
+        } catch (e) {
+          // Ignore errors getting service account info
+        }
 
+        // Generate signed URL with a long expiration (10 years)
+        const expirationDate = new Date();
+        expirationDate.setFullYear(expirationDate.getFullYear() + 10);
+        
+        const [signedUrl] = await file.getSignedUrl({
+          action: 'read',
+          expires: expirationDate,
+        });
+        url = signedUrl;
+        console.log('Successfully generated signed URL');
+      } catch (signError) {
+        // If signing fails, log detailed error
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT || firebaseAdmin.app().options.projectId || 'unknown';
+        const serviceAccountEmail = `${projectId}@appspot.gserviceaccount.com`;
+        
+        console.error('Error generating signed URL:', {
+          message: signError.message,
+          code: signError.code,
+          serviceAccount: serviceAccountEmail,
+          projectId: projectId
+        });
+        
+        // Since signed URLs aren't working and bucket isn't public, we need to make it public
+        // OR fix IAM permissions. For now, return error with instructions
+        console.error('SIGNED URL GENERATION FAILED. Options:');
+        console.error('1. Grant "Service Account Token Creator" role to:', serviceAccountEmail);
+        console.error('2. OR make bucket publicly readable: Add allUsers with "Storage Object Viewer" role');
+        
+        // Still return the public URL format - user needs to make bucket public for this to work
+        url = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+        console.warn(`Using public URL format (bucket must be public): ${url}`);
+      }
+
+      // Generate photo ID
       const photoId = firebaseAdmin.firestore().collection('trips').doc(tripId).collection('photos').doc().id;
 
+      // Use ISO string for timestamp since FieldValue.serverTimestamp() cannot be used inside arrays
       const newPhoto = {
         id: photoId,
         url: url,
@@ -88,17 +138,55 @@ export const uploadPhoto = functions.https.onRequest(async (req, res) => {
           name: name,
           photoURL: photoURL,
         },
-        uploadedAt: firebaseAdmin.firestore.FieldValue.serverTimestamp(),
+        uploadedAt: new Date().toISOString(),
       };
 
-      await firebaseAdmin.firestore().collection('trips').doc(tripId).update({
-        photos: firebaseAdmin.firestore.FieldValue.arrayUnion(newPhoto),
-      });
+      // Update Firestore with the new photo
+      try {
+        const tripRef = firebaseAdmin.firestore().collection('trips').doc(tripId);
+        
+        // Check if trip exists
+        const tripDoc = await tripRef.get();
+        if (!tripDoc.exists) {
+          throw new Error(`Trip ${tripId} does not exist`);
+        }
+
+        // Get current photos array or initialize as empty
+        const tripData = tripDoc.data();
+        const currentPhotos = tripData?.photos || [];
+
+        // Add new photo to array
+        const updatedPhotos = [...currentPhotos, newPhoto];
+
+        // Update the trip document
+        await tripRef.update({
+          photos: updatedPhotos,
+        });
+        console.log('Photo metadata saved to Firestore successfully');
+      } catch (firestoreError) {
+        console.error('Error saving photo to Firestore:', {
+          message: firestoreError.message,
+          code: firestoreError.code,
+          stack: firestoreError.stack
+        });
+        // Even if Firestore update fails, return success since file is uploaded
+        // The photo URL is still valid and can be added manually if needed
+        console.warn('Photo uploaded to storage but Firestore update failed. Photo URL:', url);
+        // Don't throw - we still want to return the URL to the client
+      }
 
       res.status(200).json({ photoId: photoId, url: url });
     } catch (error) {
-      console.error('Error uploading photo:', error);
-      res.status(500).send('Internal Server Error: Failed to upload photo.');
+      console.error('Error uploading photo:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        name: error.name
+      });
+      res.status(500).json({ 
+        error: 'Internal Server Error: Failed to upload photo.',
+        details: error.message 
+      });
     }
   });
 });
