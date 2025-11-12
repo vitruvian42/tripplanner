@@ -113,6 +113,7 @@ export function PhotoUploadSection({ tripId, initialPhotos }: PhotoUploadSection
               alt="Trip photo"
               fill
               className="object-cover rounded-lg"
+              unoptimized
             />
           </div>
         ))}
